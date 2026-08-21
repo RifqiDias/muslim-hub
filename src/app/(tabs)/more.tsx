@@ -21,6 +21,9 @@ registerStrings('more', {
   sectionWorship: 'Ibadah',
   sectionDzikir: 'Dzikir & Doa',
   sectionLearn: 'Belajar',
+  sectionInfo: 'Informasi',
+  aboutTitle: 'Tentang Aplikasi',
+  aboutSub: 'Info, kontak & sumber data',
   quranTitle: "Al Qur'an",
   quranSub: '114 surah dengan terjemahan',
   jadwalTitle: 'Jadwal Shalat',
@@ -58,6 +61,9 @@ registerStrings('more', {
   sectionWorship: 'Worship',
   sectionDzikir: 'Dhikr & Dua',
   sectionLearn: 'Learn',
+  sectionInfo: 'Information',
+  aboutTitle: 'About App',
+  aboutSub: 'Info, contact & data sources',
   quranTitle: "The Qur'an",
   quranSub: '114 surahs with translation',
   jadwalTitle: 'Prayer Times',
@@ -129,6 +135,12 @@ const GROUPS: MenuGroup[] = [
       { titlePath: 'more.asmaulTitle', subtitlePath: 'more.asmaulSub', icon: 'sparkles', gradient: 'plum', href: '/asmaul-husna' },
       { titlePath: 'more.kisahTitle', subtitlePath: 'more.kisahSub', icon: 'people', gradient: 'teal', href: '/kisah-nabi' },
       { titlePath: 'more.iqraTitle', subtitlePath: 'more.iqraSub', icon: 'school', gradient: 'night', href: '/iqra' },
+    ],
+  },
+  {
+    titlePath: 'more.sectionInfo',
+    items: [
+      { titlePath: 'more.aboutTitle', subtitlePath: 'more.aboutSub', icon: 'information-circle', gradient: 'emerald', href: '/about' },
     ],
   },
 ];
