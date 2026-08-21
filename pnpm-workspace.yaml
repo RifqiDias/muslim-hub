@@ -1,0 +1,7 @@
+packages:
+  - '.'
+
+onlyBuiltDependencies:
+  - unrs-resolver
+  - expo
+  - '@expo/config-plugins'
