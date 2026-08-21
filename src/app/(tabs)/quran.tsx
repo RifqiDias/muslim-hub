@@ -26,6 +26,7 @@ registerStrings('quranList', {
   madaniyah: 'Madaniyah',
   notFound: 'Tidak ditemukan',
   notFoundHint: 'Tidak ada surah yang cocok dengan pencarian Anda.',
+  mushaf: 'Mode Mushaf',
 }, {
   title: "The Qur'an",
   subtitle: '114 Surahs · Translation & Tafsir',
@@ -35,6 +36,7 @@ registerStrings('quranList', {
   madaniyah: 'Madaniyah',
   notFound: 'Not found',
   notFoundHint: 'No surah matches your search.',
+  mushaf: 'Mushaf Mode',
 });
 
 interface LastRead {
@@ -81,7 +83,16 @@ export default function QuranListScreen() {
 
   return (
     <Screen scroll={false} contentStyle={styles.flex}>
-      <PageHeader back={false} title={t('quranList.title')} subtitle={t('quranList.subtitle')} />
+      <PageHeader
+        back={false}
+        title={t('quranList.title')}
+        subtitle={t('quranList.subtitle')}
+        right={
+          <PressableScale onPress={() => router.push('/quran/mushaf')} style={styles.mushafBtn} hitSlop={8}>
+            <Ionicons name="book" size={20} color={colors.gold} />
+          </PressableScale>
+        }
+      />
       <SearchBar value={query} onChangeText={setQuery} placeholder={t('common.search')} />
       {isPending ? (
         <View style={styles.body}>
@@ -258,6 +269,16 @@ const makeStyles = (c: ThemeColors) =>
       alignItems: 'center',
       paddingVertical: spacing.xxxl,
       gap: spacing.xs,
+    },
+    mushafBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
     },
     emptyTitle: {
       fontFamily: font.bold,

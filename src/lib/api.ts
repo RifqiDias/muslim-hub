@@ -21,6 +21,8 @@ import {
   QuranJsonSurah,
   QuranJsonSurahDetail,
   AlQuranCloudSurah,
+  MushafAyah,
+  MushafData,
 } from './types';
 
 const API_BASE = 'https://api.qalbun.my.id';
@@ -91,6 +93,35 @@ export async function getSurahTransliteration(surah: number | string): Promise<M
     map.set(ayah.numberInSurah, ayah.text);
   }
   return map;
+}
+
+export async function getMushaf(): Promise<MushafData> {
+  const res = await fetch(`${ALQURANCLOUD_BASE}/quran/quran-uthmani`);
+  if (!res.ok) {
+    throw new Error('Gagal memuat mushaf.');
+  }
+  const json = (await res.json()) as {
+    data: { surahs: AlQuranCloudSurah[] };
+  };
+
+  const pages: MushafAyah[][] = Array.from({ length: 604 }, () => []);
+  const surahFirstPage: Record<number, number> = {};
+  const surahNames: Record<number, string> = {};
+
+  for (const surah of json.data.surahs) {
+    surahNames[surah.number] = surah.name;
+    for (const ayah of surah.ayahs) {
+      const pageIndex = (ayah.page ?? 1) - 1;
+      if (pageIndex >= 0 && pageIndex < 604) {
+        pages[pageIndex].push({ surah: surah.number, ayah: ayah.numberInSurah, text: ayah.text });
+      }
+      if (!(surah.number in surahFirstPage)) {
+        surahFirstPage[surah.number] = ayah.page ?? 1;
+      }
+    }
+  }
+
+  return { pages, surahFirstPage, surahNames };
 }
 
 /* ---------------------------------- Quran --------------------------------- */

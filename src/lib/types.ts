@@ -148,6 +148,12 @@ export interface AlQuranCloudAyah {
   number: number;
   text: string;
   numberInSurah: number;
+  juz?: number;
+  manzil?: number;
+  page?: number;
+  ruku?: number;
+  hizbQuarter?: number;
+  sajda?: boolean | Record<string, unknown>;
 }
 
 export interface AlQuranCloudSurah {
@@ -159,6 +165,18 @@ export interface AlQuranCloudSurah {
   numberOfAyahs: number;
   ayahs: AlQuranCloudAyah[];
   edition: Record<string, unknown>;
+}
+
+export interface MushafAyah {
+  surah: number;
+  ayah: number;
+  text: string;
+}
+
+export interface MushafData {
+  pages: MushafAyah[][];
+  surahFirstPage: Record<number, number>;
+  surahNames: Record<number, string>;
 }
 
 /* ------------------------------ Simple JSON ------------------------------ */

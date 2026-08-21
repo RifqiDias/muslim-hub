@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
@@ -29,6 +29,7 @@ registerStrings('surahDetail', {
   tafsirSurah: 'Tafsir Surah',
   translation: 'Terjemahan',
   latin: 'Latin',
+  openMushaf: 'Buka di Mushaf',
 }, {
   loadingSubtitle: 'Loading surah data...',
   errorSubtitle: 'Failed to load',
@@ -38,6 +39,7 @@ registerStrings('surahDetail', {
   tafsirSurah: 'Surah Tafsir',
   translation: 'Translation',
   latin: 'Latin',
+  openMushaf: 'Open in Mushaf',
 });
 
 const TRANSLATION_KEY = 'muslimhub.quran.translation';
@@ -142,7 +144,21 @@ export default function SurahDetailScreen() {
         )}
         ListHeaderComponent={
           <View>
-            <PageHeader title={data.name} subtitle={`${data.type} · ${t('surahDetail.versesCount', { count: data.number_of_ayah })}`} />
+            <PageHeader
+              title={data.name}
+              subtitle={`${data.type} · ${t('surahDetail.versesCount', { count: data.number_of_ayah })}`}
+              right={
+                <PressableScale
+                  onPress={() =>
+                    router.push({ pathname: '/quran/mushaf', params: { surah: String(data.number_of_surah) } })
+                  }
+                  style={styles.mushafBtn}
+                  hitSlop={8}
+                >
+                  <Ionicons name="book" size={20} color={colors.gold} />
+                </PressableScale>
+              }
+            />
             <Animated.View entering={FadeInDown.duration(450)}>
               <LinearGradient
                 colors={[...gradients.emerald]}
@@ -333,6 +349,16 @@ const makeStyles = (c: ThemeColors) =>
   StyleSheet.create({
     list: {
       flex: 1,
+    },
+    mushafBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
     },
     listContent: {
       paddingHorizontal: spacing.base,
