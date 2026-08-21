@@ -21,7 +21,6 @@ registerStrings('more', {
   sectionWorship: 'Ibadah',
   sectionDzikir: 'Dzikir & Doa',
   sectionLearn: 'Belajar',
-  sectionMedia: 'Media',
   quranTitle: "Al Qur'an",
   quranSub: '114 surah dengan terjemahan',
   jadwalTitle: 'Jadwal Shalat',
@@ -50,10 +49,6 @@ registerStrings('more', {
   kisahSub: 'Perjalanan 25 nabi & rasul',
   iqraTitle: 'Iqra',
   iqraSub: "Belajar membaca Al Qur'an",
-  aiTitle: 'Qalbun AI',
-  aiSub: 'Tanya seputar Islam',
-  wallpaperTitle: 'Wallpaper Islami',
-  wallpaperSub: 'Hiasan layar penuh berkah',
 }, {
   title: 'More',
   subtitle: 'All Muslim Hub features',
@@ -63,7 +58,6 @@ registerStrings('more', {
   sectionWorship: 'Worship',
   sectionDzikir: 'Dhikr & Dua',
   sectionLearn: 'Learn',
-  sectionMedia: 'Media',
   quranTitle: "The Qur'an",
   quranSub: '114 surahs with translation',
   jadwalTitle: 'Prayer Times',
@@ -92,10 +86,6 @@ registerStrings('more', {
   kisahSub: 'Journeys of 25 prophets & messengers',
   iqraTitle: 'Iqra',
   iqraSub: 'Learn to read the Qur\u2019an',
-  aiTitle: 'Qalbun AI',
-  aiSub: 'Ask anything about Islam',
-  wallpaperTitle: 'Islamic Wallpaper',
-  wallpaperSub: 'Blessed decor for your screen',
 });
 
 interface MenuEntry {
@@ -139,13 +129,6 @@ const GROUPS: MenuGroup[] = [
       { titlePath: 'more.asmaulTitle', subtitlePath: 'more.asmaulSub', icon: 'sparkles', gradient: 'plum', href: '/asmaul-husna' },
       { titlePath: 'more.kisahTitle', subtitlePath: 'more.kisahSub', icon: 'people', gradient: 'teal', href: '/kisah-nabi' },
       { titlePath: 'more.iqraTitle', subtitlePath: 'more.iqraSub', icon: 'school', gradient: 'night', href: '/iqra' },
-      { titlePath: 'more.aiTitle', subtitlePath: 'more.aiSub', icon: 'chatbubbles', gradient: 'emerald', href: '/ai' },
-    ],
-  },
-  {
-    titlePath: 'more.sectionMedia',
-    items: [
-      { titlePath: 'more.wallpaperTitle', subtitlePath: 'more.wallpaperSub', icon: 'images', gradient: 'gold', href: '/wallpaper' },
     ],
   },
 ];
