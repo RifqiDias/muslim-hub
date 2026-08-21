@@ -1,7 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -15,7 +13,7 @@ import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
 import { SkeletonBlock } from '@/components/ui/skeleton';
 import { registerStrings, useLang, type I18n } from '@/i18n';
-import { getDoaPilihan, getPrayerTimes, getRandomWallpaper } from '@/lib/api';
+import { getDoaPilihan, getPrayerTimes } from '@/lib/api';
 import { getString, StorageKeys } from '@/lib/storage';
 import { PrayerTimings } from '@/lib/types';
 import { ThemeColors, font, radius, spacing, useTheme } from '@/theme';
@@ -32,9 +30,6 @@ registerStrings('home', {
   remainingHours: '{h} jam lagi',
   remainingHm: '{h} jam {m} menit lagi',
   prayerError: 'Jadwal shalat gagal dimuat.',
-  wallpaperTitle: 'Wallpaper Islami',
-  wallpaperSubtitle: 'Hiasan layar penuh berkah',
-  wallpaperMore: 'Lainnya',
   dailyDua: 'Doa Hari Ini',
   quickMenu: 'Menu Cepat',
   allFeatures: 'Semua Fitur',
@@ -71,9 +66,6 @@ registerStrings('home', {
   remainingHours: '{h}h left',
   remainingHm: '{h}h {m}m left',
   prayerError: 'Failed to load prayer times.',
-  wallpaperTitle: 'Islamic Wallpaper',
-  wallpaperSubtitle: 'Blessed decor for your screen',
-  wallpaperMore: 'More',
   dailyDua: 'Daily Dua',
   quickMenu: 'Quick Menu',
   allFeatures: 'All Features',
@@ -99,8 +91,6 @@ registerStrings('home', {
   menuAll: 'All',
   menuAllSub: 'Browse all features',
 });
-
-const WALL_BLURHASH = 'L6PZ0S^jE1of~qx]^%M{JeR*fiM{';
 
 const PRAYER_ORDER: { key: keyof PrayerTimings; labelPath: string }[] = [
   { key: 'Fajr', labelPath: 'home.prayerFajr' },
@@ -186,7 +176,7 @@ export default function BerandaScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [city, setCity] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
-  const [wallpaperSeed] = useState(() => Math.floor(Date.now() / 86400000));
+  const [dayIndex] = useState(() => Math.floor(Date.now() / 86400000));
 
   useEffect(() => {
     getString(StorageKeys.city)
@@ -202,11 +192,6 @@ export default function BerandaScreen() {
   const prayerQuery = useQuery({
     queryKey: ['prayer-times', city ?? null],
     queryFn: () => getPrayerTimes({ city: city ?? undefined }),
-  });
-
-  const wallpaperQuery = useQuery({
-    queryKey: ['wallpaper', wallpaperSeed],
-    queryFn: () => getRandomWallpaper(),
   });
 
   const doaQuery = useQuery({ queryKey: ['doa-pilihan'], queryFn: getDoaPilihan });
@@ -233,7 +218,7 @@ export default function BerandaScreen() {
 
   const doaHariIni =
     doaQuery.data && doaQuery.data.length > 0
-      ? doaQuery.data[wallpaperSeed % doaQuery.data.length]
+      ? doaQuery.data[dayIndex % doaQuery.data.length]
       : null;
 
   const nextPrayer = (() => {
@@ -288,36 +273,7 @@ export default function BerandaScreen() {
         </PressableScale>
       ) : (
         <SkeletonBlock width="100%" height={118} radius={radius.xl} />
-      )}
-
-      <Animated.View entering={FadeInDown.duration(450).delay(170)} style={styles.heroSection}>
-        {wallpaperQuery.isLoading ? (
-          <SkeletonBlock width="100%" height={180} radius={radius.xl} />
-        ) : wallpaperQuery.data ? (
-          <View style={styles.heroCard}>
-            <Image
-              source={{ uri: wallpaperQuery.data }}
-              style={StyleSheet.absoluteFill}
-              contentFit="cover"
-              transition={500}
-              placeholder={{ blurhash: WALL_BLURHASH }}
-            />
-            <LinearGradient
-              colors={['rgba(6,16,9,0)', 'rgba(6,16,9,0.84)']}
-              style={styles.heroOverlay}
-            >
-              <View style={styles.heroTitles}>
-                <Text style={styles.heroTitle}>{t('home.wallpaperTitle')}</Text>
-                <Text style={styles.heroSub}>{t('home.wallpaperSubtitle')}</Text>
-              </View>
-              <PressableScale onPress={() => router.push('/wallpaper')} style={styles.heroBtn}>
-                <Text style={styles.heroBtnText}>{t('home.wallpaperMore')}</Text>
-                <Ionicons name="chevron-forward" size={14} color="#E8B44F" />
-              </PressableScale>
-            </LinearGradient>
-          </View>
-        ) : null}
-      </Animated.View>
+       )}
 
       {!doaQuery.isError ? (
         <View>
@@ -474,56 +430,6 @@ const makeStyles = (c: ThemeColors) =>
       fontSize: 12.5,
       color: c.textMuted,
       marginTop: 3,
-    },
-    heroSection: {
-      marginTop: spacing.md,
-    },
-    heroCard: {
-      height: 180,
-      borderRadius: radius.xl,
-      overflow: 'hidden',
-    },
-    heroOverlay: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: 0,
-      paddingTop: spacing.xxxl,
-      paddingBottom: spacing.md,
-      paddingHorizontal: spacing.md,
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-      justifyContent: 'space-between',
-    },
-    heroTitles: {
-      flex: 1,
-    },
-    heroTitle: {
-      fontFamily: font.bold,
-      fontSize: 16,
-      color: '#FFFFFF',
-    },
-    heroSub: {
-      fontFamily: font.regular,
-      fontSize: 11.5,
-      color: 'rgba(255,255,255,0.75)',
-      marginTop: 2,
-    },
-    heroBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 3,
-      paddingHorizontal: spacing.md,
-      paddingVertical: 8,
-      borderRadius: radius.full,
-      backgroundColor: 'rgba(10,21,18,0.55)',
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.18)',
-    },
-    heroBtnText: {
-      fontFamily: font.semibold,
-      fontSize: 12,
-      color: '#E8B44F',
     },
     doaPress: {
       borderRadius: radius.xl,
