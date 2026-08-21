@@ -10,6 +10,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
+import { registerStrings, useLang } from '@/i18n';
 import { getIqraPdfUrl } from '@/lib/api';
 import {
   font,
@@ -21,8 +22,43 @@ import {
   type ThemeScheme,
 } from '@/theme';
 
+registerStrings('iqraDetail', {
+  title: 'Iqra Jilid {n}',
+  subtitle: "Belajar membaca Al Qur'an",
+  volume: 'Jilid {n}',
+  method: "Metode Iqra untuk belajar membaca Al Qur'an",
+  ready: 'PDF siap dibuka',
+  notSaved: 'PDF belum tersimpan di perangkat',
+  downloadOpen: 'Unduh & Buka PDF',
+  open: 'Buka PDF',
+  redownload: 'Unduh Ulang',
+  note: 'File dibuka dengan aplikasi pembaca PDF di HP Anda',
+  downloading: 'Mengunduh PDF…',
+  opening: 'Membuka…',
+  openFailed: 'Tidak dapat membuka PDF di perangkat Anda.',
+  storageUnavailable: 'Penyimpanan tidak tersedia di perangkat ini.',
+  downloadFailed: 'Gagal mengunduh PDF. Periksa koneksi internet Anda.',
+}, {
+  title: 'Iqra Volume {n}',
+  subtitle: "Learn to read the Qur'an",
+  volume: 'Volume {n}',
+  method: 'The Iqra method for learning to read the Qur\'an',
+  ready: 'PDF ready to open',
+  notSaved: 'PDF not saved on your device yet',
+  downloadOpen: 'Download & Open PDF',
+  open: 'Open PDF',
+  redownload: 'Re-download',
+  note: 'File opens with your PDF reader app',
+  downloading: 'Downloading PDF…',
+  opening: 'Opening…',
+  openFailed: 'Could not open the PDF on your device.',
+  storageUnavailable: 'Storage is not available on this device.',
+  downloadFailed: 'Failed to download the PDF. Check your internet connection.',
+});
+
 export default function IqraVolScreen() {
   const { colors, gradients, scheme } = useTheme();
+  const { t } = useLang();
   const styles = useMemo(() => makeStyles(colors, scheme), [colors, scheme]);
 
   const params = useLocalSearchParams<{ vol: string }>();
@@ -75,10 +111,10 @@ export default function IqraVolScreen() {
       await Sharing.shareAsync(fileUri, {
         mimeType: 'application/pdf',
         UTI: 'com.adobe.pdf',
-        dialogTitle: `Iqra Jilid ${vol}`,
+        dialogTitle: t('iqraDetail.title', { n: vol }),
       });
     } catch {
-      setError('Tidak dapat membuka PDF di perangkat Anda.');
+      setError(t('iqraDetail.openFailed'));
     } finally {
       setOpening(false);
     }
@@ -87,7 +123,7 @@ export default function IqraVolScreen() {
   const downloadPdf = async (isRedownload = false) => {
     if (downloading || opening) return;
     if (!cacheDir) {
-      setError('Penyimpanan tidak tersedia di perangkat ini.');
+      setError(t('iqraDetail.storageUnavailable'));
       return;
     }
     setDownloading(true);
@@ -105,7 +141,7 @@ export default function IqraVolScreen() {
       setFileSize(info.exists ? (info.size ?? 0) : 0);
       if (!isRedownload) await openPdf();
     } catch {
-      setError('Gagal mengunduh PDF. Periksa koneksi internet Anda.');
+      setError(t('iqraDetail.downloadFailed'));
     } finally {
       setDownloading(false);
     }
@@ -113,7 +149,7 @@ export default function IqraVolScreen() {
 
   return (
     <Screen scroll>
-      <PageHeader title={`Iqra Jilid ${vol}`} subtitle="Belajar membaca Al Qur'an" />
+      <PageHeader title={t('iqraDetail.title', { n: vol })} subtitle={t('iqraDetail.subtitle')} />
       <Animated.View entering={FadeInDown.duration(450).delay(60)} style={[styles.hero, shadow.card]}>
         <LinearGradient
           colors={[...gradients.emerald]}
@@ -124,10 +160,10 @@ export default function IqraVolScreen() {
           <View style={styles.heroIcon}>
             <Ionicons name="document-text" size={64} color={colors.gold} />
           </View>
-          <Text style={styles.heroTitle}>Jilid {vol}</Text>
-          <Text style={styles.heroSub}>Metode Iqra untuk belajar membaca Al Qur&apos;an</Text>
+          <Text style={styles.heroTitle}>{t('iqraDetail.volume', { n: vol })}</Text>
+          <Text style={styles.heroSub}>{t('iqraDetail.method')}</Text>
           <Text style={styles.heroStatus}>
-            {exists ? `PDF siap dibuka${sizeLabel}` : 'PDF belum tersimpan di perangkat'}
+            {exists ? `${t('iqraDetail.ready')}${sizeLabel}` : t('iqraDetail.notSaved')}
           </Text>
         </LinearGradient>
       </Animated.View>
@@ -136,7 +172,7 @@ export default function IqraVolScreen() {
         {downloading ? (
           <View style={styles.progressBox}>
             <View style={styles.progressRow}>
-              <Text style={styles.progressLabel}>Mengunduh PDF…</Text>
+              <Text style={styles.progressLabel}>{t('iqraDetail.downloading')}</Text>
               <Text style={styles.progressPct}>{pct}%</Text>
             </View>
             <View style={styles.track}>
@@ -165,12 +201,12 @@ export default function IqraVolScreen() {
                 style={styles.primaryBtn}
               >
                 <Ionicons name="document-text" size={20} color={scheme === 'dark' ? colors.bgDeep : colors.white} />
-                <Text style={styles.primaryText}>{opening ? 'Membuka…' : 'Buka PDF'}</Text>
+                <Text style={styles.primaryText}>{opening ? t('iqraDetail.opening') : t('iqraDetail.open')}</Text>
               </LinearGradient>
             </PressableScale>
             <PressableScale onPress={() => void downloadPdf(true)} style={styles.ghostBtn} disabled={downloading}>
               <Ionicons name="refresh" size={17} color={colors.textMuted} />
-              <Text style={styles.ghostText}>Unduh Ulang</Text>
+              <Text style={styles.ghostText}>{t('iqraDetail.redownload')}</Text>
             </PressableScale>
           </View>
         ) : (
@@ -182,14 +218,14 @@ export default function IqraVolScreen() {
               style={styles.primaryBtn}
             >
               <Ionicons name="download" size={20} color={scheme === 'dark' ? colors.bgDeep : colors.white} />
-              <Text style={styles.primaryText}>Unduh &amp; Buka PDF</Text>
+              <Text style={styles.primaryText}>{t('iqraDetail.downloadOpen')}</Text>
             </LinearGradient>
           </PressableScale>
         )}
 
         <View style={styles.note}>
           <Ionicons name="information-circle-outline" size={15} color={colors.textFaint} />
-          <Text style={styles.noteText}>File dibuka dengan aplikasi pembaca PDF di HP Anda</Text>
+          <Text style={styles.noteText}>{t('iqraDetail.note')}</Text>
         </View>
       </Animated.View>
     </Screen>

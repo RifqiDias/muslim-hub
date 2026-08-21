@@ -21,10 +21,37 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SearchBar } from '@/components/ui/search-bar';
 import { SkeletonList } from '@/components/ui/skeleton';
+import { registerStrings, useLang } from '@/i18n';
 import { getAsmaulHusna } from '@/lib/api';
 import { getJSON, setJSON, StorageKeys } from '@/lib/storage';
 import { AsmaulHusnaItem } from '@/lib/types';
 import { font, radius, shadow, spacing, ThemeColors, ThemeGradients, useTheme } from '@/theme';
+
+registerStrings('asmaul', {
+  title: 'Asmaul Husna',
+  subtitle: '99 Nama Allah yang Indah',
+  searchPlaceholder: 'Cari nama, arti, atau nomor...',
+  emptyTitle: 'Tidak ditemukan',
+  emptyMessage: 'Tidak ada nama yang cocok dengan "{query}".',
+  share: 'Bagikan',
+  favorite: 'Favorit',
+  saved: 'Disimpan',
+  shareDialog: 'Bagikan Asmaul Husna',
+  shareFooter: 'Dari aplikasi Muslim Hub',
+  error: 'Gagal memuat Asmaul Husna.',
+}, {
+  title: 'Asmaul Husna',
+  subtitle: '99 Beautiful Names of Allah',
+  searchPlaceholder: 'Search by name, meaning, or number...',
+  emptyTitle: 'Not found',
+  emptyMessage: 'No names match "{query}".',
+  share: 'Share',
+  favorite: 'Favorite',
+  saved: 'Saved',
+  shareDialog: 'Share Asmaul Husna',
+  shareFooter: 'From the Muslim Hub app',
+  error: 'Failed to load Asmaul Husna.',
+});
 
 const makeCardGradients = (g: ThemeGradients): readonly (readonly [string, string])[] => [
   g.emerald,
@@ -35,6 +62,7 @@ const makeCardGradients = (g: ThemeGradients): readonly (readonly [string, strin
 ];
 
 export default function AsmaulHusnaScreen() {
+  const { t } = useLang();
   const [query, setQuery] = useState('');
   const [favorites, setFavorites] = useState<string[]>([]);
   const [selected, setSelected] = useState<AsmaulHusnaItem | null>(null);
@@ -87,16 +115,16 @@ export default function AsmaulHusnaScreen() {
       if (!available) return;
       const file = new File(Paths.cache, 'muslimhub-asmaul-husna.txt');
       file.write(
-        `${selected.arabic}\n\n${selected.latin} — ${selected.translation_id}\n\n"${selected.translation_en}"\n\nDari aplikasi Muslim Hub`,
+        `${selected.arabic}\n\n${selected.latin} — ${selected.translation_id}\n\n"${selected.translation_en}"\n\n${t('asmaul.shareFooter')}`,
       );
       await Sharing.shareAsync(file.uri, {
         mimeType: 'text/plain',
-        dialogTitle: 'Bagikan Asmaul Husna',
+        dialogTitle: t('asmaul.shareDialog'),
       });
     } catch {
       return;
     }
-  }, [selected]);
+  }, [selected, t]);
 
   const renderItem = ({ item, index }: { item: AsmaulHusnaItem; index: number }) => {
     const gradient = cardGradients[index % cardGradients.length];
@@ -137,24 +165,24 @@ export default function AsmaulHusnaScreen() {
 
   return (
     <Screen contentStyle={styles.screenContent}>
-      <PageHeader title="Asmaul Husna" subtitle="99 Nama Allah yang Indah" />
+      <PageHeader title={t('asmaul.title')} subtitle={t('asmaul.subtitle')} />
       <SearchBar
         value={query}
         onChangeText={setQuery}
-        placeholder="Cari nama, arti, atau nomor..."
+        placeholder={t('asmaul.searchPlaceholder')}
         delay={60}
       />
       <View style={styles.listArea}>
         {isPending ? (
           <SkeletonList count={6} height={168} />
         ) : isError ? (
-          <ErrorState message="Gagal memuat Asmaul Husna." onRetry={() => refetch()} />
+          <ErrorState message={t('asmaul.error')} onRetry={() => refetch()} />
         ) : filtered.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="search-outline" size={44} color={colors.textMuted} />
-            <Text style={typography.h2}>Tidak ditemukan</Text>
+            <Text style={typography.h2}>{t('asmaul.emptyTitle')}</Text>
             <Text style={[typography.caption, styles.emptyMessage]}>
-              Tidak ada nama yang cocok dengan &quot;{query.trim()}&quot;.
+              {t('asmaul.emptyMessage', { query: query.trim() })}
             </Text>
           </View>
         ) : (
@@ -225,7 +253,7 @@ export default function AsmaulHusnaScreen() {
               <View style={styles.sheetActions}>
                 <PressableScale onPress={handleShare} style={styles.actionButton}>
                   <Ionicons name="share-social-outline" size={18} color={colors.primary} />
-                  <Text style={styles.actionText}>Bagikan</Text>
+                  <Text style={styles.actionText}>{t('asmaul.share')}</Text>
                 </PressableScale>
                 <PressableScale
                   onPress={() => toggleFavorite(selected.index)}
@@ -237,7 +265,7 @@ export default function AsmaulHusnaScreen() {
                     color={isFavorite ? colors.bg : colors.gold}
                   />
                   <Text style={[styles.actionText, isFavorite && styles.actionTextActive]}>
-                    {isFavorite ? 'Disimpan' : 'Favorit'}
+                    {isFavorite ? t('asmaul.saved') : t('asmaul.favorite')}
                   </Text>
                 </PressableScale>
               </View>

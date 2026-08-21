@@ -13,10 +13,26 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
 import { SkeletonList } from '@/components/ui/skeleton';
+import { registerStrings, useLang } from '@/i18n';
 import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
 import { getAyatKursi } from '@/lib/api';
 
+registerStrings('ayatKursi', {
+  title: 'Ayat Kursi',
+  tafsir: 'Tafsir',
+  copy: 'Salin',
+  copied: 'Tersalin',
+  share: 'Bagikan',
+}, {
+  title: 'Ayat al-Kursi',
+  tafsir: 'Tafsir',
+  copy: 'Copy',
+  copied: 'Copied',
+  share: 'Share',
+});
+
 export default function AyatKursiScreen() {
+  const { t } = useLang();
   const [copied, setCopied] = useState(false);
   const { colors, gradients } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -36,13 +52,13 @@ export default function AyatKursiScreen() {
   };
 
   const handleShare = () => {
-    shareText('Ayat Kursi', fullText);
+    shareText(t('ayatKursi.title'), fullText);
   };
 
   if (isLoading) {
     return (
       <Screen scroll>
-        <PageHeader title="Ayat Kursi" subtitle="QS. Al-Baqarah: 255" />
+        <PageHeader title={t('ayatKursi.title')} subtitle="QS. Al-Baqarah: 255" />
         <SkeletonList count={3} height={160} />
       </Screen>
     );
@@ -51,7 +67,7 @@ export default function AyatKursiScreen() {
   if (isError || !data) {
     return (
       <Screen scroll>
-        <PageHeader title="Ayat Kursi" subtitle="Gagal memuat" />
+        <PageHeader title={t('ayatKursi.title')} subtitle="Gagal memuat" />
         <ErrorState message="Ayat Kursi tidak dapat dimuat." onRetry={() => refetch()} />
       </Screen>
     );
@@ -64,7 +80,7 @@ export default function AyatKursiScreen() {
 
   return (
     <Screen scroll>
-      <PageHeader title="Ayat Kursi" subtitle="QS. Al-Baqarah: 255" />
+      <PageHeader title={t('ayatKursi.title')} subtitle="QS. Al-Baqarah: 255" />
       <Animated.View entering={FadeInDown.duration(450)}>
         <LinearGradient
           colors={[...gradients.night]}
@@ -90,7 +106,7 @@ export default function AyatKursiScreen() {
           {data.translation ? <Text style={styles.translationText}>{data.translation}</Text> : null}
         </Animated.View>
       ) : null}
-      <SectionHeader title="Tafsir" />
+      <SectionHeader title={t('ayatKursi.tafsir')} />
       <View style={styles.tafsirCard}>
         {paragraphs.map((paragraph, index) => (
           <Animated.Text
@@ -111,11 +127,11 @@ export default function AyatKursiScreen() {
           ) : (
             <Ionicons name="copy-outline" size={18} color={colors.bg} />
           )}
-          <Text style={styles.primaryBtnText}>{copied ? 'Tersalin' : 'Salin'}</Text>
+          <Text style={styles.primaryBtnText}>{copied ? t('ayatKursi.copied') : t('ayatKursi.copy')}</Text>
         </PressableScale>
         <PressableScale onPress={handleShare} style={styles.secondaryBtn}>
           <Ionicons name="share-social-outline" size={18} color={colors.primary} />
-          <Text style={styles.secondaryBtnText}>Bagikan</Text>
+          <Text style={styles.secondaryBtnText}>{t('ayatKursi.share')}</Text>
         </PressableScale>
       </Animated.View>
     </Screen>

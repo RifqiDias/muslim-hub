@@ -11,118 +11,187 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SearchBar } from '@/components/ui/search-bar';
 import { SkeletonList } from '@/components/ui/skeleton';
-import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
-import { getSurahList } from '@/lib/api';
+import { registerStrings, useLang } from '@/i18n';
+import { getSurahListJson } from '@/lib/api';
 import { getJSON, StorageKeys } from '@/lib/storage';
-import type { SurahSummary } from '@/lib/types';
+import { QuranJsonSurah } from '@/lib/types';
+import { ThemeColors, font, radius, spacing, useTheme } from '@/theme';
 
-interface LastReadSurah {
+registerStrings('quranList', {
+  title: "Al Qur'an",
+  subtitle: '114 Surah · Terjemahan & Tafsir',
+  lastRead: 'Terakhir dibaca',
+  verses: '{count} ayat',
+  makkiyah: 'Makkiyah',
+  madaniyah: 'Madaniyah',
+  notFound: 'Tidak ditemukan',
+  notFoundHint: 'Tidak ada surah yang cocok dengan pencarian Anda.',
+}, {
+  title: "The Qur'an",
+  subtitle: '114 Surahs · Translation & Tafsir',
+  lastRead: 'Last read',
+  verses: '{count} verses',
+  makkiyah: 'Makkiyah',
+  madaniyah: 'Madaniyah',
+  notFound: 'Not found',
+  notFoundHint: 'No surah matches your search.',
+});
+
+interface LastRead {
   number: number;
   name: string;
   ayat: number;
 }
 
-export default function QuranScreen() {
-  const [search, setSearch] = useState('');
-  const [lastRead, setLastRead] = useState<LastReadSurah | null>(null);
+export default function QuranListScreen() {
+  const { t, lang } = useLang();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['surah-list'],
-    queryFn: getSurahList,
+
+  const [query, setQuery] = useState('');
+  const [lastRead, setLastRead] = useState<LastRead | null>(null);
+
+  const { data, isPending, isError, refetch } = useQuery({
+    queryKey: ['quranjson-list'],
+    queryFn: getSurahListJson,
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 
   useEffect(() => {
-    getJSON<LastReadSurah>(StorageKeys.lastReadSurah).then(setLastRead);
+    getJSON<LastRead>(StorageKeys.lastReadSurah).then((value) => setLastRead(value));
   }, []);
+
+  const meaning = useMemo(
+    () => (item: QuranJsonSurah) => item.name_translations[lang] ?? item.name_translations.id,
+    [lang],
+  );
 
   const filtered = useMemo(() => {
     if (!data) return [];
-    const q = search.trim().toLowerCase();
+    const q = query.trim().toLowerCase();
     if (!q) return data;
     return data.filter(
       (item) =>
-        item.name.transliteration.id.toLowerCase().includes(q) ||
-        item.name.translation.id.toLowerCase().includes(q) ||
-        String(item.number).includes(q),
+        item.name.toLowerCase().includes(q) ||
+        meaning(item).toLowerCase().includes(q) ||
+        String(item.number_of_surah) === q,
     );
-  }, [data, search]);
-
-  const openSurah = (number: number) => {
-    router.push({ pathname: '/quran/[surah]', params: { surah: String(number) } });
-  };
+  }, [data, query, meaning]);
 
   return (
-    <Screen edges={['top']}>
-      <PageHeader back={false} title="Al Qur'an" subtitle="114 Surah • Terjemahan & Tafsir" />
-      <SearchBar value={search} onChangeText={setSearch} placeholder="Cari nama, arti, atau nomor surah" delay={60} />
-      {lastRead && typeof lastRead.number === 'number' ? (
-        <Animated.View entering={FadeInDown.springify().delay(120)}>
-          <PressableScale onPress={() => openSurah(lastRead.number)} style={styles.lastReadChip}>
-            <Ionicons name="bookmark" size={16} color={colors.gold} />
-            <Text style={styles.lastReadText} numberOfLines={1}>
-              Terakhir dibaca: {lastRead.name}
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-          </PressableScale>
-        </Animated.View>
-      ) : null}
-      <View style={styles.spacer} />
-      {isLoading ? (
-        <SkeletonList count={7} height={92} />
+    <Screen scroll={false} contentStyle={styles.flex}>
+      <PageHeader back={false} title={t('quranList.title')} subtitle={t('quranList.subtitle')} />
+      <SearchBar value={query} onChangeText={setQuery} placeholder={t('common.search')} />
+      {isPending ? (
+        <View style={styles.body}>
+          <SkeletonList count={7} height={92} />
+        </View>
       ) : isError ? (
-        <ErrorState message="Daftar surah tidak dapat dimuat." onRetry={() => refetch()} />
+        <View style={styles.body}>
+          <ErrorState onRetry={() => refetch()} />
+        </View>
       ) : (
         <FlatList
           style={styles.list}
+          contentContainerStyle={styles.listContent}
           data={filtered}
-          keyExtractor={(item) => String(item.number)}
-          renderItem={({ item, index }) => (
-            <SurahCard item={item} index={index} onPress={() => openSurah(item.number)} />
-          )}
+          keyExtractor={(item) => String(item.number_of_surah)}
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            lastRead ? (
+              <PressableScale
+                onPress={() =>
+                  router.push({ pathname: '/quran/[surah]', params: { surah: String(lastRead.number) } })
+                }
+                style={styles.lastReadPress}
+              >
+                <View style={styles.lastReadCard}>
+                  <View style={styles.lastReadIcon}>
+                    <Ionicons name="bookmark" size={16} color={colors.primary} />
+                  </View>
+                  <View style={styles.lastReadTexts}>
+                    <Text style={styles.lastReadLabel}>{t('quranList.lastRead')}</Text>
+                    <Text style={styles.lastReadName} numberOfLines={1}>
+                      {lastRead.name}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
+                </View>
+              </PressableScale>
+            ) : null
+          }
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Ionicons name="search-outline" size={36} color={colors.textFaint} />
-              <Text style={styles.emptyText}>Tidak ada surah yang cocok untuk &quot;{search.trim()}&quot;</Text>
+              <Ionicons name="search-outline" size={44} color={colors.textMuted} />
+              <Text style={styles.emptyTitle}>{t('quranList.notFound')}</Text>
+              <Text style={styles.emptyMessage}>{t('quranList.notFoundHint')}</Text>
             </View>
           }
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+          renderItem={({ item, index }) => (
+            <SurahRow
+              item={item}
+              index={index}
+              meaning={meaning(item)}
+              typeLabel={item.type === 'Madaniyah' ? t('quranList.madaniyah') : t('quranList.makkiyah')}
+              versesLabel={t('quranList.verses', { count: item.number_of_ayah })}
+            />
+          )}
         />
       )}
     </Screen>
   );
 }
 
-function SurahCard({ item, index, onPress }: { item: SurahSummary; index: number; onPress: () => void }) {
+function SurahRow({
+  item,
+  index,
+  meaning,
+  typeLabel,
+  versesLabel,
+}: {
+  item: QuranJsonSurah;
+  index: number;
+  meaning: string;
+  typeLabel: string;
+  versesLabel: string;
+}) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+
   return (
     <Animated.View entering={FadeInDown.springify().delay(Math.min(index, 12) * 40)}>
-      <PressableScale onPress={onPress} style={styles.card}>
-        <View style={styles.numberBadge}>
-          <Text style={styles.numberText}>{item.number}</Text>
-        </View>
-        <View style={styles.info}>
-          <Text style={styles.nameText} numberOfLines={1}>
-            {item.name.transliteration.id}
-          </Text>
-          <Text style={styles.meaningText} numberOfLines={1}>
-            {item.name.translation.id}
-          </Text>
-          <View style={styles.chipRow}>
-            <View style={styles.miniChip}>
-              <Text style={styles.miniChipText}>{item.numberOfVerses} Ayat</Text>
-            </View>
-            <View style={styles.miniChip}>
-              <Text style={styles.miniChipText}>{item.revelation.id}</Text>
+      <PressableScale
+        onPress={() =>
+          router.push({ pathname: '/quran/[surah]', params: { surah: String(item.number_of_surah) } })
+        }
+        style={styles.rowPress}
+      >
+        <View style={styles.row}>
+          <View style={styles.numberBadge}>
+            <Text style={styles.numberText}>{item.number_of_surah}</Text>
+          </View>
+          <View style={styles.rowTexts}>
+            <Text style={styles.name} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text style={styles.meaning} numberOfLines={1}>
+              {meaning}
+            </Text>
+            <View style={styles.chips}>
+              <View style={styles.chip}>
+                <Text style={styles.chipText}>{typeLabel}</Text>
+              </View>
+              <View style={styles.chip}>
+                <Text style={styles.chipText}>{versesLabel}</Text>
+              </View>
             </View>
           </View>
+          <ArabicText size={22} color={colors.gold} numberOfLines={1}>
+            {item.name_translations.ar}
+          </ArabicText>
         </View>
-        <ArabicText size={26} color={colors.gold} numberOfLines={1}>
-          {item.name.short}
-        </ArabicText>
       </PressableScale>
     </Animated.View>
   );
@@ -130,35 +199,83 @@ function SurahCard({ item, index, onPress }: { item: SurahSummary; index: number
 
 const makeStyles = (c: ThemeColors) =>
   StyleSheet.create({
-    spacer: {
-      height: spacing.md,
+    flex: {
+      flex: 1,
     },
     list: {
       flex: 1,
     },
     listContent: {
+      paddingHorizontal: spacing.base,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.xxl,
       gap: spacing.md,
-      paddingBottom: spacing.xl,
     },
-    lastReadChip: {
+    body: {
+      paddingHorizontal: spacing.base,
+      paddingTop: spacing.md,
+      flex: 1,
+    },
+    lastReadPress: {
+      borderRadius: radius.lg,
+      marginBottom: spacing.md,
+    },
+    lastReadCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm,
-      backgroundColor: c.goldSoft,
+      gap: spacing.md,
+      backgroundColor: c.primarySoft,
       borderWidth: 1,
-      borderColor: c.gold,
-      borderRadius: radius.full,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.sm + 2,
+      borderColor: c.primary,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+    },
+    lastReadIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: c.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    lastReadTexts: {
+      flex: 1,
+    },
+    lastReadLabel: {
+      fontFamily: font.semibold,
+      fontSize: 11,
+      color: c.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    lastReadName: {
+      fontFamily: font.bold,
+      fontSize: 15,
+      color: c.text,
+      marginTop: 1,
+    },
+    empty: {
+      alignItems: 'center',
+      paddingVertical: spacing.xxxl,
+      gap: spacing.xs,
+    },
+    emptyTitle: {
+      fontFamily: font.bold,
+      fontSize: 16,
+      color: c.text,
       marginTop: spacing.md,
     },
-    lastReadText: {
-      flex: 1,
-      fontFamily: font.semibold,
-      fontSize: 13,
-      color: c.text,
+    emptyMessage: {
+      fontFamily: font.regular,
+      fontSize: 12.5,
+      color: c.textMuted,
+      maxWidth: 240,
+      textAlign: 'center',
     },
-    card: {
+    rowPress: {
+      borderRadius: radius.lg,
+    },
+    row: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.md,
@@ -166,62 +283,51 @@ const makeStyles = (c: ThemeColors) =>
       borderWidth: 1,
       borderColor: c.border,
       borderRadius: radius.lg,
-      padding: spacing.base,
+      padding: spacing.md,
     },
     numberBadge: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: c.primary,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      borderWidth: 1.5,
+      borderColor: c.primary,
+      backgroundColor: c.primarySoft,
       alignItems: 'center',
       justifyContent: 'center',
     },
     numberText: {
       fontFamily: font.bold,
-      fontSize: 14,
-      color: c.bg,
-    },
-    info: {
-      flex: 1,
-      gap: 2,
-    },
-    nameText: {
-      fontFamily: font.bold,
       fontSize: 15,
+      color: c.primary,
+    },
+    rowTexts: {
+      flex: 1,
+    },
+    name: {
+      fontFamily: font.bold,
+      fontSize: 15.5,
       color: c.text,
     },
-    meaningText: {
+    meaning: {
       fontFamily: font.regular,
       fontSize: 12,
       color: c.textMuted,
+      marginTop: 1,
     },
-    chipRow: {
+    chips: {
       flexDirection: 'row',
       gap: 6,
-      marginTop: 4,
+      marginTop: 6,
     },
-    miniChip: {
+    chip: {
       backgroundColor: c.surfaceAlt,
-      borderWidth: 1,
-      borderColor: c.border,
       borderRadius: radius.full,
       paddingHorizontal: 8,
-      paddingVertical: 2,
+      paddingVertical: 3,
     },
-    miniChipText: {
+    chipText: {
       fontFamily: font.semibold,
-      fontSize: 11,
+      fontSize: 10,
       color: c.textMuted,
-    },
-    empty: {
-      alignItems: 'center',
-      gap: spacing.sm,
-      paddingVertical: spacing.xxxl,
-    },
-    emptyText: {
-      fontFamily: font.regular,
-      fontSize: 13,
-      color: c.textMuted,
-      textAlign: 'center',
     },
   });

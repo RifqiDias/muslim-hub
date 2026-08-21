@@ -9,12 +9,54 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
+import { registerStrings, useLang } from '@/i18n';
 import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
+
+registerStrings('dzikirHub', {
+  title: 'Dzikir',
+  greetingMorning: 'Selamat pagi, awali hari dengan dzikir pagi',
+  greetingEvening: 'Selamat petang, tutup hari dengan dzikir petang',
+  recommendChip: 'Waktunya',
+  othersTitle: 'Bacaan Lainnya',
+  pagiTitle: 'Dzikir Pagi',
+  pagiSubtitle: 'Dibaca pada waktu pagi, sejak terbit fajar hingga menjelang dzuhur',
+  petangTitle: 'Dzikir Petang',
+  petangSubtitle: 'Dibaca pada waktu petang, sejak Ashar hingga malam hari',
+  setelahShalatTitle: 'Setelah Shalat',
+  setelahShalatSubtitle: 'Dibaca setiap selesai melaksanakan shalat fardhu',
+  wiridTitle: 'Wirid & Tasbih',
+  wiridSubtitle: 'Hitung wirid dengan tasbih digital',
+  tahlilTitle: 'Tahlil',
+  tahlilSubtitle: 'Bacaan tahlil lengkap',
+  doaHarianTitle: 'Doa Harian',
+  doaHarianSubtitle: 'Doa untuk aktivitas sehari-hari',
+  doaPilihanTitle: 'Doa Pilihan',
+  doaPilihanSubtitle: 'Kumpulan doa pilihan berpahala',
+}, {
+  title: 'Dhikr',
+  greetingMorning: 'Good morning, start your day with morning dhikr',
+  greetingEvening: 'Good evening, end your day with evening dhikr',
+  recommendChip: 'It’s time',
+  othersTitle: 'More Recitations',
+  pagiTitle: 'Morning Dhikr',
+  pagiSubtitle: 'Recited in the morning, from dawn until midday',
+  petangTitle: 'Evening Dhikr',
+  petangSubtitle: 'Recited in the evening, from late afternoon until night',
+  setelahShalatTitle: 'After Prayer',
+  setelahShalatSubtitle: 'Recited after every obligatory prayer',
+  wiridTitle: 'Wirid & Tasbih',
+  wiridSubtitle: 'Count your wirid with a digital tasbih',
+  tahlilTitle: 'Tahlil',
+  tahlilSubtitle: 'The complete tahlil recitation',
+  doaHarianTitle: 'Daily Duas',
+  doaHarianSubtitle: 'Duas for everyday activities',
+  doaPilihanTitle: 'Selected Duas',
+  doaPilihanSubtitle: 'A collection of rewarding selected duas',
+});
 
 interface DzikirMode {
   type: string;
-  title: string;
-  subtitle: string;
+  label: string;
   icon: keyof typeof Ionicons.glyphMap;
   gradient: 'gold' | 'night' | 'emerald';
   time: 'pagi' | 'petang';
@@ -23,24 +65,21 @@ interface DzikirMode {
 const MODES: DzikirMode[] = [
   {
     type: 'pagi',
-    title: 'Dzikir Pagi',
-    subtitle: 'Dibaca pada waktu pagi, sejak terbit fajar hingga menjelang dzuhur',
+    label: 'pagi',
     icon: 'sunny',
     gradient: 'gold',
     time: 'pagi',
   },
   {
     type: 'petang',
-    title: 'Dzikir Petang',
-    subtitle: 'Dibaca pada waktu petang, sejak Ashar hingga malam hari',
+    label: 'petang',
     icon: 'moon',
     gradient: 'night',
     time: 'petang',
   },
   {
     type: 'setelah-shalat',
-    title: 'Setelah Shalat',
-    subtitle: 'Dibaca setiap selesai melaksanakan shalat fardhu',
+    label: 'setelahShalat',
     icon: 'checkmark-circle',
     gradient: 'emerald',
     time: 'pagi',
@@ -50,35 +89,32 @@ const MODES: DzikirMode[] = [
 const OTHERS = [
   {
     href: '/wirid',
-    title: 'Wirid & Tasbih',
-    subtitle: 'Hitung wirid dengan tasbih digital',
+    label: 'wirid',
     icon: 'repeat',
     gradient: 'teal',
   },
   {
     href: '/tahlil',
-    title: 'Tahlil',
-    subtitle: 'Bacaan tahlil lengkap',
+    label: 'tahlil',
     icon: 'hand-left-outline',
     gradient: 'night',
   },
   {
     href: '/doa-harian',
-    title: 'Doa Harian',
-    subtitle: 'Doa untuk aktivitas sehari-hari',
+    label: 'doaHarian',
     icon: 'sunny-outline',
     gradient: 'plum',
   },
   {
     href: '/doa-pilihan',
-    title: 'Doa Pilihan',
-    subtitle: 'Kumpulan doa pilihan berpahala',
+    label: 'doaPilihan',
     icon: 'star-outline',
     gradient: 'gold',
   },
 ] as const;
 
 export default function DzikirHubScreen() {
+  const { t } = useLang();
   const { colors, gradients, scheme } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const iconWrapBg = scheme === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.55)';
@@ -93,8 +129,8 @@ export default function DzikirHubScreen() {
     <Screen scroll>
       <PageHeader
         back={false}
-        title="Dzikir"
-        subtitle={isMorning ? 'Selamat pagi, awali hari dengan dzikir pagi' : 'Selamat petang, tutup hari dengan dzikir petang'}
+        title={t('dzikirHub.title')}
+        subtitle={isMorning ? t('dzikirHub.greetingMorning') : t('dzikirHub.greetingEvening')}
       />
 
       {MODES.map((mode, index) => {
@@ -113,11 +149,11 @@ export default function DzikirHubScreen() {
                 </View>
                 <View style={styles.modeTextWrap}>
                   <View style={styles.modeTitleRow}>
-                    <Text style={styles.modeTitle}>{mode.title}</Text>
-                    {recommended ? <View style={styles.recommendChip}><Text style={styles.recommendText}>Waktunya</Text></View> : null}
+                    <Text style={styles.modeTitle}>{t(`dzikirHub.${mode.label}Title`)}</Text>
+                    {recommended ? <View style={styles.recommendChip}><Text style={styles.recommendText}>{t('dzikirHub.recommendChip')}</Text></View> : null}
                   </View>
                   <Text style={styles.modeSubtitle} numberOfLines={2}>
-                    {mode.subtitle}
+                    {t(`dzikirHub.${mode.label}Subtitle`)}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
@@ -127,12 +163,12 @@ export default function DzikirHubScreen() {
         );
       })}
 
-      <SectionHeader title="Bacaan Lainnya" />
+      <SectionHeader title={t('dzikirHub.othersTitle')} />
       {OTHERS.map((item, index) => (
         <FeatureCard
           key={item.href}
-          title={item.title}
-          subtitle={item.subtitle}
+          title={t(`dzikirHub.${item.label}Title`)}
+          subtitle={t(`dzikirHub.${item.label}Subtitle`)}
           icon={item.icon}
           gradient={item.gradient}
           onPress={() => router.push(item.href)}

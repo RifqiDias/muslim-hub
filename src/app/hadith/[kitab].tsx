@@ -13,9 +13,44 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
+import { registerStrings, useLang } from '@/i18n';
 import { getHadithBooks, getHadithByNumber, getHadithByRange } from '@/lib/api';
 import { HadithContent } from '@/lib/types';
 import { font, radius, spacing, useTheme, ThemeColors } from '@/theme';
+
+registerStrings('hadithBook', {
+  loadingSubtitle: 'Memuat data kitab...',
+  availableSubtitle: '{count} hadits tersedia',
+  searchRange: 'Cari nomor 1-{max}',
+  searchPlaceholder: 'Cari nomor hadits',
+  searchBtn: 'Cari',
+  backToList: 'Kembali ke daftar hadits',
+  copied: 'Tersalin',
+  copy: 'Salin',
+  share: 'Bagikan',
+  shareTitle: 'Bagikan Hadits',
+  prev: 'Sebelumnya',
+  next: 'Berikutnya',
+  emptyRange: 'Tidak ada hadits pada rentang ini.',
+  loadMore: 'Muat 50 berikutnya',
+  allLoaded: 'Semua hadits telah dimuat',
+}, {
+  loadingSubtitle: 'Loading book data...',
+  availableSubtitle: '{count} hadiths available',
+  searchRange: 'Go to number 1-{max}',
+  searchPlaceholder: 'Go to hadith number',
+  searchBtn: 'Go',
+  backToList: 'Back to hadith list',
+  copied: 'Copied',
+  copy: 'Copy',
+  share: 'Share',
+  shareTitle: 'Share Hadith',
+  prev: 'Previous',
+  next: 'Next',
+  emptyRange: 'No hadiths in this range.',
+  loadMore: 'Load next 50',
+  allLoaded: 'All hadiths have been loaded',
+});
 
 const PAGE_SIZE = 50;
 
@@ -28,6 +63,7 @@ interface HadithCardProps {
 }
 
 function HadithCard({ hadith, expanded, onToggle, sourceLabel, delay = 0 }: HadithCardProps) {
+  const { t } = useLang();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [copied, setCopied] = useState(false);
@@ -46,7 +82,7 @@ function HadithCard({ hadith, expanded, onToggle, sourceLabel, delay = 0 }: Hadi
       if (await Sharing.isAvailableAsync()) {
         const fileUri = `${FileSystem.cacheDirectory ?? ''}hadith-${Date.now()}.txt`;
         await FileSystem.writeAsStringAsync(fileUri, shareText, { encoding: FileSystem.EncodingType.UTF8 });
-        await Sharing.shareAsync(fileUri, { mimeType: 'text/plain', dialogTitle: 'Bagikan Hadits' });
+        await Sharing.shareAsync(fileUri, { mimeType: 'text/plain', dialogTitle: t('hadithBook.shareTitle') });
         shared = true;
       }
     } catch {
@@ -76,11 +112,11 @@ function HadithCard({ hadith, expanded, onToggle, sourceLabel, delay = 0 }: Hadi
           <View style={styles.actions}>
             <PressableScale onPress={handleCopy} style={styles.actionBtn}>
               <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={16} color={copied ? colors.primary : colors.textMuted} />
-              <Text style={[styles.actionText, copied && styles.actionTextActive]}>{copied ? 'Tersalin' : 'Salin'}</Text>
+              <Text style={[styles.actionText, copied && styles.actionTextActive]}>{copied ? t('hadithBook.copied') : t('hadithBook.copy')}</Text>
             </PressableScale>
             <PressableScale onPress={handleShare} style={styles.actionBtn}>
               <Ionicons name="share-social-outline" size={16} color={colors.textMuted} />
-              <Text style={styles.actionText}>Bagikan</Text>
+              <Text style={styles.actionText}>{t('hadithBook.share')}</Text>
             </PressableScale>
           </View>
         </Animated.View>
@@ -90,6 +126,7 @@ function HadithCard({ hadith, expanded, onToggle, sourceLabel, delay = 0 }: Hadi
 }
 
 export default function HadithKitabScreen() {
+  const { t, lang } = useLang();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const params = useLocalSearchParams<{ kitab?: string; name?: string }>();
@@ -138,7 +175,10 @@ export default function HadithKitabScreen() {
     setExpanded(null);
   };
 
-  const subtitle = available > 0 ? `${available.toLocaleString('id-ID')} hadits tersedia` : 'Memuat data kitab...';
+  const locale = lang === 'en' ? 'en-US' : 'id-ID';
+  const subtitle = available > 0
+    ? t('hadithBook.availableSubtitle', { count: available.toLocaleString(locale) })
+    : t('hadithBook.loadingSubtitle');
 
   return (
     <Screen scroll>
@@ -150,7 +190,7 @@ export default function HadithKitabScreen() {
           style={styles.input}
           value={nomorInput}
           onChangeText={(text) => setNomorInput(text.replace(/[^0-9]/g, ''))}
-          placeholder={available > 0 ? `Cari nomor 1-${available.toLocaleString('id-ID')}` : 'Cari nomor hadits'}
+          placeholder={available > 0 ? t('hadithBook.searchRange', { max: available.toLocaleString(locale) }) : t('hadithBook.searchPlaceholder')}
           placeholderTextColor={colors.textFaint}
           keyboardType="number-pad"
           returnKeyType="search"
@@ -158,7 +198,7 @@ export default function HadithKitabScreen() {
           onSubmitEditing={handleSearch}
         />
         <PressableScale onPress={handleSearch} style={styles.searchBtn} disabled={nomorInput.length === 0}>
-          <Text style={styles.searchBtnText}>Cari</Text>
+          <Text style={styles.searchBtnText}>{t('hadithBook.searchBtn')}</Text>
         </PressableScale>
       </Animated.View>
 
@@ -166,7 +206,7 @@ export default function HadithKitabScreen() {
         <View style={styles.section}>
           <PressableScale onPress={clearSearch} style={styles.backToList}>
             <Ionicons name="arrow-back" size={15} color={colors.primary} />
-            <Text style={styles.backToListText}>Kembali ke daftar hadits</Text>
+            <Text style={styles.backToListText}>{t('hadithBook.backToList')}</Text>
           </PressableScale>
           {singleQuery.isPending ? (
             <SkeletonList count={1} height={280} />
@@ -190,7 +230,7 @@ export default function HadithKitabScreen() {
               style={[styles.pagerBtn, page === 0 && styles.pagerBtnDisabled]}
             >
               <Ionicons name="chevron-back" size={16} color={page === 0 ? colors.textFaint : colors.text} />
-              <Text style={[styles.pagerBtnText, page === 0 && styles.pagerBtnTextDisabled]}>Sebelumnya</Text>
+              <Text style={[styles.pagerBtnText, page === 0 && styles.pagerBtnTextDisabled]}>{t('hadithBook.prev')}</Text>
             </PressableScale>
             <Text style={styles.pagerLabel} numberOfLines={1}>
               {start}-{end}
@@ -200,7 +240,7 @@ export default function HadithKitabScreen() {
               disabled={!hasNext}
               style={[styles.pagerBtn, !hasNext && styles.pagerBtnDisabled]}
             >
-              <Text style={[styles.pagerBtnText, !hasNext && styles.pagerBtnTextDisabled]}>Berikutnya</Text>
+              <Text style={[styles.pagerBtnText, !hasNext && styles.pagerBtnTextDisabled]}>{t('hadithBook.next')}</Text>
               <Ionicons name="chevron-forward" size={16} color={!hasNext ? colors.textFaint : colors.text} />
             </PressableScale>
           </View>
@@ -223,17 +263,17 @@ export default function HadithKitabScreen() {
               ))}
             </View>
           ) : (
-            <Text style={styles.emptyText}>Tidak ada hadits pada rentang ini.</Text>
+            <Text style={styles.emptyText}>{t('hadithBook.emptyRange')}</Text>
           )}
 
           {rangeQuery.data ? (
             hasNext ? (
               <PressableScale onPress={() => setPage((current) => current + 1)} style={styles.loadMore}>
                 <Ionicons name="arrow-down" size={16} color={colors.primary} />
-                <Text style={styles.loadMoreText}>Muat 50 berikutnya</Text>
+                <Text style={styles.loadMoreText}>{t('hadithBook.loadMore')}</Text>
               </PressableScale>
             ) : (
-              <Text style={styles.endText}>Semua hadits telah dimuat</Text>
+              <Text style={styles.endText}>{t('hadithBook.allLoaded')}</Text>
             )
           ) : null}
         </View>

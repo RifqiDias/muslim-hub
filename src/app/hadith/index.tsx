@@ -10,9 +10,20 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
+import { registerStrings, useLang } from '@/i18n';
 import { getHadithBooks } from '@/lib/api';
 import { HadithBook } from '@/lib/types';
 import { font, radius, spacing, useTheme, ThemeColors, ThemeGradients } from '@/theme';
+
+registerStrings('hadithList', {
+  title: 'Kitab Hadits',
+  subtitle: '9 kitab hadits pilihan',
+  count: '{count} hadits',
+}, {
+  title: 'Hadith Books',
+  subtitle: '9 curated hadith books',
+  count: '{count} hadiths',
+});
 
 const makeBookGradients = (g: ThemeGradients): readonly (readonly [string, string])[] => [
   g.emerald,
@@ -23,6 +34,7 @@ const makeBookGradients = (g: ThemeGradients): readonly (readonly [string, strin
 ];
 
 function BookCard({ item, index }: { item: HadithBook; index: number }) {
+  const { t, lang } = useLang();
   const { colors, gradients, scheme } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const bookGradients = makeBookGradients(gradients);
@@ -51,7 +63,9 @@ function BookCard({ item, index }: { item: HadithBook; index: number }) {
           <Text style={styles.cardTitle} numberOfLines={2}>
             {item.name}
           </Text>
-          <Text style={styles.cardCount}>{item.available.toLocaleString('id-ID')} hadits</Text>
+          <Text style={styles.cardCount}>
+            {t('hadithList.count', { count: item.available.toLocaleString(lang === 'en' ? 'en-US' : 'id-ID') })}
+          </Text>
         </LinearGradient>
       </PressableScale>
     </Animated.View>
@@ -59,6 +73,7 @@ function BookCard({ item, index }: { item: HadithBook; index: number }) {
 }
 
 export default function HadithIndexScreen() {
+  const { t } = useLang();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { data, isPending, isError, refetch } = useQuery({
@@ -68,7 +83,7 @@ export default function HadithIndexScreen() {
 
   return (
     <Screen scroll>
-      <PageHeader title="Kitab Hadits" subtitle="9 kitab hadits pilihan" />
+      <PageHeader title={t('hadithList.title')} subtitle={t('hadithList.subtitle')} />
       {isPending ? <SkeletonList count={6} height={158} /> : null}
       {isError && !data ? <ErrorState onRetry={() => refetch()} /> : null}
       {data ? (

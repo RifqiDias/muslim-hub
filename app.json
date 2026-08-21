@@ -53,7 +53,8 @@
         {
           "savePhotosPermission": "Muslim Hub meminta izin untuk menyimpan wallpaper islami ke galeri Anda."
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true,

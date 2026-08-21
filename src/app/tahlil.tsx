@@ -7,10 +7,20 @@ import { ErrorState } from '@/components/ui/error-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
+import { registerStrings, useLang } from '@/i18n';
 import { getTahlil } from '@/lib/api';
 import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
 
+registerStrings('tahlil', {
+  title: 'Tahlil',
+  subtitle: 'Bacaan tahlil lengkap beserta terjemah',
+}, {
+  title: 'Tahlil',
+  subtitle: 'The complete tahlil recitation with translation',
+});
+
 export default function TahlilScreen() {
+  const { t } = useLang();
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -23,7 +33,7 @@ export default function TahlilScreen() {
 
   return (
     <Screen scroll>
-      <PageHeader title="Tahlil" subtitle="Bacaan tahlil lengkap beserta terjemah" />
+      <PageHeader title={t('tahlil.title')} subtitle={t('tahlil.subtitle')} />
 
       {isPending ? (
         <SkeletonList count={6} height={130} />

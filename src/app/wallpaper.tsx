@@ -11,12 +11,48 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SkeletonBlock } from '@/components/ui/skeleton';
+import { registerStrings, useLang } from '@/i18n';
 import { getRandomWallpaper } from '@/lib/api';
 import { ThemeColors, ThemeGradients, font, radius, shadow, spacing, useTheme } from '@/theme';
 import * as FileSystem from 'expo-file-system/legacy';
 
+registerStrings('wallpaper', {
+  title: 'Wallpaper Islami',
+  subtitle: 'Wallpaper acak untuk perangkat Anda',
+  another: 'Wallpaper Lain',
+  save: 'Simpan',
+  saving: 'Menyimpan {pct}%',
+  share: 'Bagikan',
+  opening: 'Membuka…',
+  savedToGallery: 'Wallpaper tersimpan di galeri',
+  savedViaShare: 'Disimpan melalui menu bagikan',
+  permissionDenied: 'Izin akses galeri ditolak',
+  saveFailed: 'Gagal menyimpan wallpaper',
+  shareFailed: 'Gagal membagikan wallpaper',
+  loadFailed: 'Wallpaper gagal dimuat. Periksa koneksi internet Anda.',
+  saveDialog: 'Simpan Wallpaper Islami',
+  shareDialog: 'Bagikan Wallpaper Islami',
+}, {
+  title: 'Islamic Wallpaper',
+  subtitle: 'Random wallpapers for your device',
+  another: 'Another Wallpaper',
+  save: 'Save',
+  saving: 'Saving {pct}%',
+  share: 'Share',
+  opening: 'Opening…',
+  savedToGallery: 'Wallpaper saved to gallery',
+  savedViaShare: 'Saved via share menu',
+  permissionDenied: 'Gallery permission denied',
+  saveFailed: 'Failed to save wallpaper',
+  shareFailed: 'Failed to share wallpaper',
+  loadFailed: 'Failed to load wallpaper. Check your internet connection.',
+  saveDialog: 'Save Islamic Wallpaper',
+  shareDialog: 'Share Islamic Wallpaper',
+});
+
 export default function WallpaperScreen() {
   const { colors, gradients, scheme } = useTheme();
+  const { t } = useLang();
   const styles = useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { height } = useWindowDimensions();
   const [seed, setSeed] = useState<number>(() => Date.now());
@@ -71,13 +107,13 @@ export default function WallpaperScreen() {
       if (!permission.granted || !permission.canAskAgain) {
         await Sharing.shareAsync(localUri, {
           mimeType: 'image/jpeg',
-          dialogTitle: 'Simpan Wallpaper Islami',
+          dialogTitle: t('wallpaper.saveDialog'),
         });
-        showToast('Disimpan melalui menu bagikan');
+        showToast(t('wallpaper.savedViaShare'));
         return;
       }
       await MediaLibrary.saveToLibraryAsync(localUri);
-      showToast('Wallpaper tersimpan di galeri');
+      showToast(t('wallpaper.savedToGallery'));
     } catch {
       try {
         const localUri = await FileSystem.downloadAsync(
@@ -86,11 +122,11 @@ export default function WallpaperScreen() {
         ).then((r) => r.uri);
         await Sharing.shareAsync(localUri, {
           mimeType: 'image/jpeg',
-          dialogTitle: 'Simpan Wallpaper Islami',
+          dialogTitle: t('wallpaper.saveDialog'),
         });
-        showToast('Disimpan melalui menu bagikan');
+        showToast(t('wallpaper.savedViaShare'));
       } catch {
-        showToast('Gagal menyimpan wallpaper');
+        showToast(t('wallpaper.saveFailed'));
       }
     } finally {
       setSavePct(null);
@@ -108,10 +144,10 @@ export default function WallpaperScreen() {
       const result = await FileSystem.downloadAsync(url, fileUri);
       await Sharing.shareAsync(result.uri, {
         mimeType: 'image/jpeg',
-        dialogTitle: 'Bagikan Wallpaper Islami',
+        dialogTitle: t('wallpaper.shareDialog'),
       });
     } catch {
-      showToast('Gagal membagikan wallpaper');
+      showToast(t('wallpaper.shareFailed'));
     } finally {
       setSharing(false);
     }
@@ -122,7 +158,7 @@ export default function WallpaperScreen() {
 
   return (
     <Screen contentStyle={styles.content}>
-      <PageHeader title="Wallpaper Islami" subtitle="Wallpaper acak untuk perangkat Anda" />
+      <PageHeader title={t('wallpaper.title')} subtitle={t('wallpaper.subtitle')} />
       <View style={[styles.card, { height: cardHeight }, shadow.card]}>
         {query.isPending ? (
           <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -131,7 +167,7 @@ export default function WallpaperScreen() {
         ) : query.isError ? (
           <View style={styles.errorWrap}>
             <ErrorState
-              message="Wallpaper gagal dimuat. Periksa koneksi internet Anda."
+              message={t('wallpaper.loadFailed')}
               onRetry={changeWallpaper}
             />
           </View>
@@ -174,20 +210,20 @@ export default function WallpaperScreen() {
             style={styles.primaryBtn}
           >
             <Ionicons name="refresh" size={19} color={primaryTextColor} />
-            <Text style={[styles.primaryText, { color: primaryTextColor }]}>Wallpaper Lain</Text>
+            <Text style={[styles.primaryText, { color: primaryTextColor }]}>{t('wallpaper.another')}</Text>
           </LinearGradient>
         </PressableScale>
         <View style={styles.row}>
           <PressableScale onPress={saveWallpaper} style={styles.secondaryBtn} disabled={savePct !== null}>
             <Ionicons name="download" size={18} color={savePct !== null ? colors.textFaint : colors.primary} />
             <Text style={styles.secondaryText} numberOfLines={1}>
-              {savePct === null ? 'Simpan' : `Menyimpan ${savePct}%`}
+              {savePct === null ? t('wallpaper.save') : t('wallpaper.saving', { pct: savePct })}
             </Text>
           </PressableScale>
           <PressableScale onPress={shareWallpaper} style={styles.secondaryBtn} disabled={sharing}>
             <Ionicons name="share-social" size={18} color={sharing ? colors.textFaint : colors.gold} />
             <Text style={styles.secondaryText} numberOfLines={1}>
-              {sharing ? 'Membuka…' : 'Bagikan'}
+              {sharing ? t('wallpaper.opening') : t('wallpaper.share')}
             </Text>
           </PressableScale>
         </View>

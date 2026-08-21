@@ -7,6 +7,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
+import { registerStrings, useLang } from '@/i18n';
 import {
   font,
   radius,
@@ -17,6 +18,18 @@ import {
   type ThemeGradients,
   type ThemeScheme,
 } from '@/theme';
+
+registerStrings('iqraList', {
+  title: 'Iqra',
+  subtitle: 'Pilih jilid untuk mulai belajar',
+  volume: 'Jilid {n}',
+  learn: "Belajar membaca Al Qur'an",
+}, {
+  title: 'Iqra',
+  subtitle: 'Choose a volume to start learning',
+  volume: 'Volume {n}',
+  learn: "Learn to read the Qur'an",
+});
 
 const VOLUMES: { vol: number; gradient: keyof ThemeGradients }[] = [
   { vol: 1, gradient: 'emerald' },
@@ -29,11 +42,12 @@ const VOLUMES: { vol: number; gradient: keyof ThemeGradients }[] = [
 
 export default function IqraScreen() {
   const { colors, gradients, scheme } = useTheme();
+  const { t } = useLang();
   const styles = useMemo(() => makeStyles(colors, scheme), [colors, scheme]);
 
   return (
     <Screen scroll>
-      <PageHeader title="Iqra" subtitle="Pilih jilid untuk mulai belajar" />
+      <PageHeader title={t('iqraList.title')} subtitle={t('iqraList.subtitle')} />
       <View style={styles.grid}>
         {VOLUMES.map((item) => (
           <Animated.View
@@ -54,8 +68,8 @@ export default function IqraScreen() {
                 <View style={styles.iconCircle}>
                   <Ionicons name="book" size={24} color={scheme === 'dark' ? colors.white : colors.text} />
                 </View>
-                <Text style={styles.cardTitle}>Jilid {item.vol}</Text>
-                <Text style={styles.cardSub}>Belajar membaca Al Qur&apos;an</Text>
+                <Text style={styles.cardTitle}>{t('iqraList.volume', { n: item.vol })}</Text>
+                <Text style={styles.cardSub}>{t('iqraList.learn')}</Text>
               </LinearGradient>
             </PressableScale>
           </Animated.View>

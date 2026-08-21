@@ -5,51 +5,85 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  ZoomIn,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { shareText } from '@/components/quran-share';
+import { QuranAudioPlayer } from '@/components/quran-audio-player';
 import { ArabicText } from '@/components/ui/arabic-text';
 import { ErrorState } from '@/components/ui/error-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
-import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
-import { getSurahDetail } from '@/lib/api';
-import { setJSON, StorageKeys } from '@/lib/storage';
-import type { Verse } from '@/lib/types';
+import { registerStrings, useLang, type Lang } from '@/i18n';
+import { getSurahDetailJson } from '@/lib/api';
+import { getString, setJSON, setString, StorageKeys } from '@/lib/storage';
+import { QuranJsonVerse } from '@/lib/types';
+import { ThemeColors, font, radius, spacing, useTheme } from '@/theme';
+
+registerStrings('surahDetail', {
+  loadingSubtitle: 'Memuat data surah...',
+  errorSubtitle: 'Gagal memuat',
+  versesCount: '{count} Ayat',
+  surahNumber: 'Surah ke-{number}',
+  tafsirVerse: 'Tafsir Kemenag',
+  tafsirSurah: 'Tafsir Surah',
+  translation: 'Terjemahan',
+}, {
+  loadingSubtitle: 'Loading surah data...',
+  errorSubtitle: 'Failed to load',
+  versesCount: '{count} Verses',
+  surahNumber: 'Surah {number}',
+  tafsirVerse: 'Kemenag Tafsir',
+  tafsirSurah: 'Surah Tafsir',
+  translation: 'Translation',
+});
+
+const TRANSLATION_KEY = 'muslimhub.quran.translation';
 
 export default function SurahDetailScreen() {
+  const { t, lang } = useLang();
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const { surah } = useLocalSearchParams<{ surah: string }>();
   const surahParam = surah ?? '1';
   const [tafsirOpen, setTafsirOpen] = useState(false);
-  const { colors, gradients } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['surah', surahParam],
-    queryFn: () => getSurahDetail(surahParam),
+  const [translationLang, setTranslationLang] = useState<Lang>(lang);
+
+  const { data, isPending, isError, refetch } = useQuery({
+    queryKey: ['quranjson-surah', surahParam],
+    queryFn: () => getSurahDetailJson(surahParam),
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
+
+  useEffect(() => {
+    getString(TRANSLATION_KEY)
+      .then((value) => {
+        if (value === 'en' || value === 'id') setTranslationLang(value);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (data) {
       setJSON(StorageKeys.lastReadSurah, {
-        number: data.number,
-        name: data.name.transliteration.id,
+        number: data.number_of_surah,
+        name: data.name,
         ayat: 1,
       });
     }
   }, [data]);
 
-  if (isLoading) {
+  const switchTranslation = (next: Lang) => {
+    setTranslationLang(next);
+    setString(TRANSLATION_KEY, next).catch(() => undefined);
+  };
+
+  if (isPending) {
     return (
       <Screen scroll>
-        <PageHeader title="Surah" subtitle="Memuat data surah..." />
+        <PageHeader title={t('quranList.title')} subtitle={t('surahDetail.loadingSubtitle')} />
         <SkeletonList count={5} height={150} />
       </Screen>
     );
@@ -58,27 +92,32 @@ export default function SurahDetailScreen() {
   if (isError || !data) {
     return (
       <Screen scroll>
-        <PageHeader title="Surah" subtitle="Gagal memuat" />
-        <ErrorState message="Detail surah tidak dapat dimuat." onRetry={() => refetch()} />
+        <PageHeader title={t('quranList.title')} subtitle={t('surahDetail.errorSubtitle')} />
+        <ErrorState onRetry={() => refetch()} />
       </Screen>
     );
   }
+
+  const meaning = data.name_translations[lang] ?? data.name_translations.id;
 
   return (
     <Screen>
       <FlatList
         style={styles.list}
         data={data.verses}
-        keyExtractor={(verse) => String(verse.number.inSurah)}
+        keyExtractor={(verse) => String(verse.number)}
         renderItem={({ item, index }) => (
-          <VerseCard verse={item} index={index} surahName={data.name.transliteration.id} />
+          <VerseCard
+            verse={item}
+            index={index}
+            surahName={data.name}
+            translationLang={translationLang}
+            tafsirText={data.tafsir?.id?.kemenag?.text?.[String(item.number)] ?? null}
+          />
         )}
         ListHeaderComponent={
           <View>
-            <PageHeader
-              title={data.name.transliteration.id}
-              subtitle={`${data.revelation.id} • ${data.numberOfVerses} Ayat`}
-            />
+            <PageHeader title={data.name} subtitle={`${data.type} · ${t('surahDetail.versesCount', { count: data.number_of_ayah })}`} />
             <Animated.View entering={FadeInDown.duration(450)}>
               <LinearGradient
                 colors={[...gradients.emerald]}
@@ -87,42 +126,67 @@ export default function SurahDetailScreen() {
                 style={styles.hero}
               >
                 <ArabicText size={36} bold center color={colors.gold}>
-                  {data.name.long}
+                  {data.name_translations.ar}
                 </ArabicText>
-                <Text style={styles.heroTransliteration}>{data.name.transliteration.id}</Text>
-                <Text style={styles.heroMeaning}>{data.name.translation.id}</Text>
+                <Text style={styles.heroTransliteration}>{data.name}</Text>
+                <Text style={styles.heroMeaning}>{meaning}</Text>
                 <View style={styles.heroChips}>
                   <View style={styles.heroChip}>
-                    <Ionicons name="location-outline" size={12} color={colors.primary} />
-                    <Text style={styles.heroChipText}>{data.revelation.id}</Text>
+                    <Ionicons name="location-outline" size={12} color={colors.gold} />
+                    <Text style={styles.heroChipText}>{data.place}</Text>
                   </View>
                   <View style={styles.heroChip}>
-                    <Text style={styles.heroChipText}>{data.numberOfVerses} Ayat</Text>
+                    <Text style={styles.heroChipText}>{data.type}</Text>
                   </View>
                   <View style={styles.heroChip}>
-                    <Text style={styles.heroChipText}>Surah ke-{data.number}</Text>
+                    <Text style={styles.heroChipText}>
+                      {t('surahDetail.surahNumber', { number: data.number_of_surah })}
+                    </Text>
                   </View>
                 </View>
               </LinearGradient>
             </Animated.View>
-            {data.preBismillah ? (
-              <Animated.View entering={FadeInDown.duration(400).delay(80)} style={styles.bismillahCard}>
-                <ArabicText size={24} center>
-                  {data.preBismillah.text.arab}
-                </ArabicText>
-                {data.preBismillah.translation?.id ? (
-                  <Text style={styles.bismillahTranslation}>{data.preBismillah.translation.id}</Text>
-                ) : null}
-              </Animated.View>
+            {data.recitations.length > 0 ? (
+              <QuranAudioPlayer
+                recitations={data.recitations}
+                surahLabel={data.name}
+                style={styles.audioCard}
+              />
             ) : null}
+            <View style={styles.translationSwitchRow}>
+              <Text style={styles.translationLabel}>{t('surahDetail.translation')}</Text>
+              <View style={styles.translationSwitch}>
+                {(['id', 'en'] as Lang[]).map((code) => {
+                  const active = translationLang === code;
+                  return (
+                    <PressableScale
+                      key={code}
+                      onPress={() => switchTranslation(code)}
+                      haptic={false}
+                      style={styles.translationOptionPress}
+                    >
+                      <View style={[styles.translationOption, active && styles.translationOptionActive]}>
+                        <Text style={[styles.translationOptionText, active && styles.translationOptionTextActive]}>
+                          {code === 'id' ? 'Indonesia' : 'English'}
+                        </Text>
+                      </View>
+                    </PressableScale>
+                  );
+                })}
+              </View>
+            </View>
             <PressableScale onPress={() => setTafsirOpen((value) => !value)} style={styles.tafsirToggle}>
               <Ionicons name="book-outline" size={16} color={colors.primary} />
-              <Text style={styles.tafsirToggleText}>Tafsir Surah</Text>
-              <Chevron open={tafsirOpen} />
+              <Text style={styles.tafsirToggleText}>{t('surahDetail.tafsirSurah')}</Text>
+              <Ionicons
+                name={tafsirOpen ? 'chevron-up' : 'chevron-down'}
+                size={16}
+                color={colors.textMuted}
+              />
             </PressableScale>
             {tafsirOpen ? (
               <Animated.View entering={FadeIn.duration(300)} style={styles.tafsirCard}>
-                <Text style={styles.tafsirText}>{data.tafsir.id}</Text>
+                <Text style={styles.tafsirText}>{data.tafsir?.id?.kemenag?.text?.['1'] ?? '—'}</Text>
               </Animated.View>
             ) : null}
             <View style={styles.spacer} />
@@ -135,31 +199,28 @@ export default function SurahDetailScreen() {
   );
 }
 
-function Chevron({ open }: { open: boolean }) {
-  const { colors } = useTheme();
-  const rotation = useSharedValue(0);
-
-  useEffect(() => {
-    rotation.value = withTiming(open ? 90 : 0, { duration: 200 });
-  }, [open, rotation]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotation.value}deg` }],
-  }));
-
-  return (
-    <Animated.View style={animatedStyle}>
-      <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-    </Animated.View>
-  );
-}
-
-function VerseCard({ verse, index, surahName }: { verse: Verse; index: number; surahName: string }) {
-  const [copied, setCopied] = useState(false);
+function VerseCard({
+  verse,
+  index,
+  surahName,
+  translationLang,
+  tafsirText,
+}: {
+  verse: QuranJsonVerse;
+  index: number;
+  surahName: string;
+  translationLang: Lang;
+  tafsirText: string | null;
+}) {
+  const { t } = useLang();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const translation = verse.translation?.id ?? '';
-  const payload = `${verse.text.arab}\n\n${translation}\n\n(${surahName}: ${verse.number.inSurah})`;
+
+  const [copied, setCopied] = useState(false);
+  const [tafsirOpen, setTafsirOpen] = useState(false);
+
+  const translation = translationLang === 'en' ? verse.translation_en : verse.translation_id;
+  const payload = `${verse.text}\n\n${translation}\n\n(${surahName}: ${verse.number})`;
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(payload);
@@ -168,16 +229,25 @@ function VerseCard({ verse, index, surahName }: { verse: Verse; index: number; s
   };
 
   const handleShare = () => {
-    shareText(`QS. ${surahName}: ${verse.number.inSurah}`, payload);
+    shareText(`QS. ${surahName}: ${verse.number}`, payload);
   };
 
   return (
     <Animated.View entering={FadeInDown.duration(350).delay(Math.min(index, 10) * 50)} style={styles.verseCard}>
       <View style={styles.verseHeader}>
         <View style={styles.verseBadge}>
-          <Text style={styles.verseBadgeText}>{verse.number.inSurah}</Text>
+          <Text style={styles.verseBadgeText}>{verse.number}</Text>
         </View>
         <View style={styles.verseActions}>
+          {tafsirText ? (
+            <PressableScale onPress={() => setTafsirOpen((value) => !value)} haptic={false} style={styles.actionBtn} hitSlop={6}>
+              <Ionicons
+                name={tafsirOpen ? 'book' : 'book-outline'}
+                size={16}
+                color={tafsirOpen ? colors.primary : colors.textMuted}
+              />
+            </PressableScale>
+          ) : null}
           <PressableScale onPress={handleCopy} haptic={false} style={styles.actionBtn} hitSlop={6}>
             {copied ? (
               <Animated.View entering={ZoomIn.duration(200)}>
@@ -192,8 +262,17 @@ function VerseCard({ verse, index, surahName }: { verse: Verse; index: number; s
           </PressableScale>
         </View>
       </View>
-      <ArabicText size={28}>{verse.text.arab}</ArabicText>
+      <ArabicText size={28}>{verse.text}</ArabicText>
       <Text style={styles.verseTranslation}>{translation}</Text>
+      {tafsirText && tafsirOpen ? (
+        <Animated.View entering={FadeIn.duration(250)} style={styles.verseTafsir}>
+          <View style={styles.verseTafsirHeader}>
+            <Ionicons name="book" size={12} color={colors.gold} />
+            <Text style={styles.verseTafsirTitle}>{t('surahDetail.tafsirVerse')}</Text>
+          </View>
+          <Text style={styles.verseTafsirText}>{tafsirText}</Text>
+        </Animated.View>
+      ) : null}
     </Animated.View>
   );
 }
@@ -204,11 +283,9 @@ const makeStyles = (c: ThemeColors) =>
       flex: 1,
     },
     listContent: {
-      gap: spacing.md,
+      paddingHorizontal: spacing.base,
       paddingBottom: spacing.xxl,
-    },
-    spacer: {
-      height: spacing.md,
+      gap: spacing.md,
     },
     hero: {
       borderRadius: radius.xl,
@@ -232,13 +309,13 @@ const makeStyles = (c: ThemeColors) =>
       flexWrap: 'wrap',
       justifyContent: 'center',
       gap: spacing.sm,
-      marginTop: spacing.lg,
+      marginTop: spacing.md,
     },
     heroChip: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      backgroundColor: c.primarySoft,
+      backgroundColor: 'rgba(255,255,255,0.12)',
       borderRadius: radius.full,
       paddingHorizontal: 10,
       paddingVertical: 4,
@@ -248,58 +325,90 @@ const makeStyles = (c: ThemeColors) =>
       fontSize: 11,
       color: c.text,
     },
-    bismillahCard: {
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: radius.md,
-      padding: spacing.base,
-      alignItems: 'center',
-      gap: spacing.xs,
+    audioCard: {
+      marginTop: spacing.md,
     },
-    bismillahTranslation: {
-      fontFamily: font.regular,
+    translationSwitchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: spacing.md,
+    },
+    translationLabel: {
+      fontFamily: font.semibold,
       fontSize: 12,
       color: c.textMuted,
-      textAlign: 'center',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    translationSwitch: {
+      flexDirection: 'row',
+      backgroundColor: c.surface,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: 3,
+    },
+    translationOptionPress: {
+      borderRadius: radius.full,
+    },
+    translationOption: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: 6,
+      borderRadius: radius.full,
+    },
+    translationOptionActive: {
+      backgroundColor: c.primarySoft,
+    },
+    translationOptionText: {
+      fontFamily: font.semibold,
+      fontSize: 12,
+      color: c.textMuted,
+    },
+    translationOptionTextActive: {
+      color: c.primary,
     },
     tafsirToggle: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
+      marginTop: spacing.md,
+      padding: spacing.md,
+      borderRadius: radius.lg,
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: radius.md,
-      paddingHorizontal: spacing.base,
-      paddingVertical: spacing.md + 2,
     },
     tafsirToggleText: {
       flex: 1,
       fontFamily: font.semibold,
-      fontSize: 14,
+      fontSize: 13.5,
       color: c.text,
     },
     tafsirCard: {
-      backgroundColor: c.surface,
+      marginTop: spacing.sm,
+      padding: spacing.md,
+      borderRadius: radius.lg,
+      backgroundColor: c.surfaceAlt,
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: radius.md,
-      padding: spacing.base,
     },
     tafsirText: {
       fontFamily: font.regular,
-      fontSize: 13.5,
-      lineHeight: 22,
+      fontSize: 12.5,
+      lineHeight: 20,
       color: c.text,
+    },
+    spacer: {
+      height: spacing.md,
     },
     verseCard: {
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: radius.lg,
+      borderRadius: radius.xl,
       padding: spacing.lg,
-      gap: spacing.md,
+      gap: spacing.sm,
     },
     verseHeader: {
       flexDirection: 'row',
@@ -307,14 +416,15 @@ const makeStyles = (c: ThemeColors) =>
       justifyContent: 'space-between',
     },
     verseBadge: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      minWidth: 34,
+      height: 34,
+      borderRadius: 17,
       borderWidth: 1.5,
       borderColor: c.gold,
       backgroundColor: c.goldSoft,
       alignItems: 'center',
       justifyContent: 'center',
+      paddingHorizontal: 8,
     },
     verseBadgeText: {
       fontFamily: font.bold,
@@ -323,20 +433,44 @@ const makeStyles = (c: ThemeColors) =>
     },
     verseActions: {
       flexDirection: 'row',
-      gap: spacing.sm,
+      alignItems: 'center',
+      gap: 4,
     },
     actionBtn: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: c.surfaceAlt,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
       alignItems: 'center',
       justifyContent: 'center',
     },
     verseTranslation: {
       fontFamily: font.regular,
-      fontSize: 14,
-      lineHeight: 22,
+      fontSize: 13.5,
+      lineHeight: 21,
+      color: c.textMuted,
+    },
+    verseTafsir: {
+      backgroundColor: c.surfaceAlt,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      gap: spacing.sm,
+    },
+    verseTafsirHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    verseTafsirTitle: {
+      fontFamily: font.semibold,
+      fontSize: 11.5,
+      color: c.gold,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    verseTafsirText: {
+      fontFamily: font.regular,
+      fontSize: 12.5,
+      lineHeight: 20,
       color: c.text,
     },
   });

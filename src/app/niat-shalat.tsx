@@ -17,7 +17,18 @@ import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
 import { getNiatShalat } from '@/lib/api';
 import type { NiatShalatItem } from '@/lib/types';
+import { registerStrings, useLang } from '@/i18n';
 import { font, radius, spacing, ThemeColors, useTheme } from '@/theme';
+
+registerStrings('niat', {
+  title: 'Niat Shalat',
+  subtitle: 'Lafal niat lima shalat wajib',
+  rakaat: '{count} rakaat',
+}, {
+  title: 'Prayer Intentions',
+  subtitle: 'The intentions of the five obligatory prayers',
+  rakaat: '{count} rakaat',
+});
 
 const RAKAAT_RULES: { keys: string[]; rakaat: number }[] = [
   { keys: ['subuh', 'shubuh', 'fajr', 'subhi'], rakaat: 2 },
@@ -37,6 +48,7 @@ function inferRakaat(name: string): number | null {
 
 function NiatCard({ item, index }: { item: NiatShalatItem; index: number }) {
   const { colors } = useTheme();
+  const { t } = useLang();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expanded, setExpanded] = useState(index === 0);
   const progress = useSharedValue(index === 0 ? 1 : 0);
@@ -66,7 +78,7 @@ function NiatCard({ item, index }: { item: NiatShalatItem; index: number }) {
             <View style={styles.metaRow}>
               {rakaat !== null ? (
                 <View style={styles.rakaatChip}>
-                  <Text style={styles.rakaatText}>{rakaat} rakaat</Text>
+                  <Text style={styles.rakaatText}>{t('niat.rakaat', { count: rakaat })}</Text>
                 </View>
               ) : null}
             </View>
@@ -89,6 +101,7 @@ function NiatCard({ item, index }: { item: NiatShalatItem; index: number }) {
 
 export default function NiatShalatScreen() {
   const { colors } = useTheme();
+  const { t } = useLang();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['niat-shalat'],
@@ -97,7 +110,7 @@ export default function NiatShalatScreen() {
 
   return (
     <Screen scroll>
-      <PageHeader title="Niat Shalat" subtitle="Lafal niat lima shalat wajib" />
+      <PageHeader title={t('niat.title')} subtitle={t('niat.subtitle')} />
       {isPending ? <SkeletonList count={5} height={92} /> : null}
       {isError ? <ErrorState onRetry={() => refetch()} /> : null}
       {data ? (

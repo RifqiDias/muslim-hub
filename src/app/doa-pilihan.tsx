@@ -14,11 +14,25 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
+import { registerStrings, useLang } from '@/i18n';
 import { getDoaPilihan } from '@/lib/api';
 import { DoaItem } from '@/lib/types';
 import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
 
+registerStrings('doaPilihan', {
+  title: 'Doa Pilihan',
+  subtitle: 'Kumpulan doa pilihan beserta keutamaannya',
+  fawaid: 'Keutamaan',
+  source: 'Sumber: {source}',
+}, {
+  title: 'Featured Duas',
+  subtitle: 'A collection of featured duas with their virtues',
+  fawaid: 'Virtues',
+  source: 'Source: {source}',
+});
+
 export default function DoaPilihanScreen() {
+  const { t } = useLang();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -31,7 +45,7 @@ export default function DoaPilihanScreen() {
 
   return (
     <Screen scroll>
-      <PageHeader title="Doa Pilihan" subtitle="Kumpulan doa pilihan beserta keutamaannya" />
+      <PageHeader title={t('doaPilihan.title')} subtitle={t('doaPilihan.subtitle')} />
 
       {isPending ? (
         <SkeletonList count={5} height={160} />
@@ -49,6 +63,7 @@ export default function DoaPilihanScreen() {
 }
 
 function DoaCard({ item, delay }: { item: DoaItem; delay: number }) {
+  const { t } = useLang();
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -92,7 +107,7 @@ function DoaCard({ item, delay }: { item: DoaItem; delay: number }) {
         <>
           <PressableScale onPress={toggle} haptic={false} style={styles.fawaidToggle}>
             <Ionicons name="sparkles" size={16} color={colors.primary} />
-            <Text style={styles.fawaidToggleText}>Keutamaan</Text>
+            <Text style={styles.fawaidToggleText}>{t('doaPilihan.fawaid')}</Text>
             <Animated.View style={chevronStyle}>
               <Ionicons name="chevron-down" size={16} color={colors.primary} />
             </Animated.View>
@@ -105,7 +120,9 @@ function DoaCard({ item, delay }: { item: DoaItem; delay: number }) {
         </>
       ) : null}
 
-      {item.source ? <Text style={[typography.caption, styles.source]}>{item.source}</Text> : null}
+      {item.source ? (
+        <Text style={[typography.caption, styles.source]}>{t('doaPilihan.source', { source: item.source })}</Text>
+      ) : null}
     </Animated.View>
   );
 }

@@ -18,8 +18,29 @@ import { ErrorState } from '@/components/ui/error-state';
 import { LoadingView } from '@/components/ui/loading';
 import { PageHeader } from '@/components/ui/page-header';
 import { Screen } from '@/components/ui/screen';
+import { registerStrings, useLang } from '@/i18n';
 import { getKisahNabi } from '@/lib/api';
 import { font, radius, shadow, spacing, ThemeColors, useTheme } from '@/theme';
+
+registerStrings('kisahDetail', {
+  title: 'Kisah Nabi',
+  loading: 'Memuat kisah nabi...',
+  error: 'Gagal memuat kisah nabi.',
+  notFoundTitle: 'Tidak ditemukan',
+  notFoundMessage: 'Kisah yang Anda cari tidak tersedia atau nomor tidak valid.',
+  order: 'Kisah ke-{n} dari 25',
+  age: 'Usia {years} thn',
+  birthYear: 'Lahir {year}',
+}, {
+  title: 'Prophet Stories',
+  loading: 'Loading prophet stories...',
+  error: 'Failed to load prophet stories.',
+  notFoundTitle: 'Not found',
+  notFoundMessage: 'The story you are looking for is unavailable or the number is invalid.',
+  order: 'Story {n} of 25',
+  age: 'Lived {years} yrs',
+  birthYear: 'Born {year}',
+});
 
 const REMAINING_THRESHOLD = 320;
 
@@ -29,6 +50,7 @@ function getInitials(name: string): string {
 }
 
 export default function KisahNabiDetailScreen() {
+  const { t } = useLang();
   const { index } = useLocalSearchParams<{ index: string }>();
   const { colors, gradients, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -86,17 +108,17 @@ export default function KisahNabiDetailScreen() {
 
   return (
     <Screen contentStyle={styles.screenContent}>
-      <PageHeader title="Kisah Nabi" subtitle={item?.name} />
+      <PageHeader title={t('kisahDetail.title')} subtitle={item?.name} />
       {isPending ? (
-        <LoadingView label="Memuat kisah nabi..." />
+        <LoadingView label={t('kisahDetail.loading')} />
       ) : isError ? (
-        <ErrorState message="Gagal memuat kisah nabi." onRetry={() => refetch()} />
+        <ErrorState message={t('kisahDetail.error')} onRetry={() => refetch()} />
       ) : !item ? (
         <View style={styles.notFound}>
           <Ionicons name="book-outline" size={48} color={colors.textMuted} />
-          <Text style={[typography.h2, styles.notFoundTitle]}>Tidak ditemukan</Text>
+          <Text style={[typography.h2, styles.notFoundTitle]}>{t('kisahDetail.notFoundTitle')}</Text>
           <Text style={[typography.caption, styles.notFoundMessage]}>
-            Kisah yang Anda cari tidak tersedia atau nomor tidak valid.
+            {t('kisahDetail.notFoundMessage')}
           </Text>
         </View>
       ) : (
@@ -132,19 +154,19 @@ export default function KisahNabiDetailScreen() {
                     <Text style={styles.heroAvatarText}>{getInitials(item.name)}</Text>
                   </LinearGradient>
                   <View style={styles.heroInfo}>
-                    <Text style={styles.heroOrder}>Kisah ke-{parsedIndex + 1} dari 25</Text>
+                    <Text style={styles.heroOrder}>{t('kisahDetail.order', { n: parsedIndex + 1 })}</Text>
                     <Text style={styles.heroName}>{item.name}</Text>
                   </View>
                 </View>
                 <View style={styles.heroChips}>
-                  <View style={styles.chip}>
-                    <Ionicons name="time-outline" size={12} color={colors.primary} />
-                    <Text style={styles.chipText}>Usia {item.usia}</Text>
-                  </View>
-                  <View style={styles.chipGold}>
-                    <Ionicons name="calendar-outline" size={12} color={colors.gold} />
-                    <Text style={styles.chipTextGold}>Lahir {item.thn_kelahiran}</Text>
-                  </View>
+                   <View style={styles.chip}>
+                     <Ionicons name="time-outline" size={12} color={colors.primary} />
+                     <Text style={styles.chipText}>{t('kisahDetail.age', { years: item.usia })}</Text>
+                   </View>
+                   <View style={styles.chipGold}>
+                     <Ionicons name="calendar-outline" size={12} color={colors.gold} />
+                     <Text style={styles.chipTextGold}>{t('kisahDetail.birthYear', { year: item.thn_kelahiran })}</Text>
+                   </View>
                 </View>
               </LinearGradient>
             </Animated.View>

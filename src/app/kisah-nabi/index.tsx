@@ -10,8 +10,23 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
+import { registerStrings, useLang } from '@/i18n';
 import { getKisahNabi } from '@/lib/api';
 import { font, radius, shadow, spacing, ThemeColors, ThemeGradients, useTheme } from '@/theme';
+
+registerStrings('kisahList', {
+  title: 'Kisah 25 Nabi',
+  subtitle: 'Teladan hidup para nabi dan rasul',
+  age: 'usia {years} thn',
+  birthYear: 'thn kelahiran {year}',
+  error: 'Gagal memuat kisah nabi.',
+}, {
+  title: 'Stories of 25 Prophets',
+  subtitle: 'Life lessons from the prophets and messengers',
+  age: 'lived {years} yrs',
+  birthYear: 'born {year}',
+  error: 'Failed to load prophet stories.',
+});
 
 const makeAvatarGradients = (g: ThemeGradients): readonly (readonly [string, string])[] => [
   g.emerald,
@@ -27,6 +42,7 @@ function getInitials(name: string): string {
 }
 
 export default function KisahNabiScreen() {
+  const { t } = useLang();
   const { colors, gradients, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const avatarGradients = makeAvatarGradients(gradients);
@@ -37,11 +53,11 @@ export default function KisahNabiScreen() {
 
   return (
     <Screen scroll>
-      <PageHeader title="Kisah 25 Nabi" subtitle="Teladan hidup para nabi dan rasul" />
+      <PageHeader title={t('kisahList.title')} subtitle={t('kisahList.subtitle')} />
       {isPending ? (
         <SkeletonList count={7} height={84} />
       ) : isError ? (
-        <ErrorState message="Gagal memuat kisah nabi." onRetry={() => refetch()} />
+        <ErrorState message={t('kisahList.error')} onRetry={() => refetch()} />
       ) : (
         <View style={styles.list}>
           {data.map((item, index) => {
@@ -71,11 +87,15 @@ export default function KisahNabiScreen() {
                     <View style={styles.chips}>
                       <View style={styles.chip}>
                         <Ionicons name="time-outline" size={12} color={colors.primary} />
-                        <Text style={styles.chipText}>{item.usia}</Text>
+                        <Text style={styles.chipText}>
+                          {t('kisahList.age', { years: item.usia })}
+                        </Text>
                       </View>
                       <View style={styles.chip}>
                         <Ionicons name="calendar-outline" size={12} color={colors.gold} />
-                        <Text style={styles.chipText}>{item.thn_kelahiran}</Text>
+                        <Text style={styles.chipText}>
+                          {t('kisahList.birthYear', { year: item.thn_kelahiran })}
+                        </Text>
                       </View>
                     </View>
                   </View>

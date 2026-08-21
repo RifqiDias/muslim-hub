@@ -10,10 +10,20 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
 import { getBacaanShalat } from '@/lib/api';
+import { registerStrings, useLang } from '@/i18n';
 import { font, radius, spacing, ThemeColors, useTheme } from '@/theme';
+
+registerStrings('bacaanShalat', {
+  title: 'Bacaan Shalat',
+  subtitle: 'Bacaan dalam gerakan shalat',
+}, {
+  title: 'Prayer Recitations',
+  subtitle: 'Recitations throughout the prayer movements',
+});
 
 export default function BacaanShalatScreen() {
   const { colors, gradients } = useTheme();
+  const { t } = useLang();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['bacaan-shalat'],
@@ -22,7 +32,7 @@ export default function BacaanShalatScreen() {
 
   return (
     <Screen scroll>
-      <PageHeader title="Bacaan Shalat" subtitle="Bacaan dalam gerakan shalat" />
+      <PageHeader title={t('bacaanShalat.title')} subtitle={t('bacaanShalat.subtitle')} />
       {isPending ? <SkeletonList count={6} height={150} /> : null}
       {isError ? <ErrorState onRetry={() => refetch()} /> : null}
       {data ? (

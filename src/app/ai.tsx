@@ -16,19 +16,47 @@ import { LoadingView } from '@/components/ui/loading';
 import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
+import { registerStrings, useLang } from '@/i18n';
 import { askQalbunAI } from '@/lib/api';
 import { getJSON, setJSON } from '@/lib/storage';
 import { font, radius, spacing, useTheme, type ThemeColors, type ThemeScheme } from '@/theme';
 
 const HISTORY_KEY = 'muslimhub.ai.history';
 
-const TIPS = [
-  'Kisah Nabi Muhammad SAW',
-  'Tata cara shalat',
-  'Keutamaan sedekah',
-  'Adab membaca Al Qur\'an',
-  'Doa sebelum tidur',
-];
+registerStrings('ai', {
+  title: 'Tanya Qalbun AI',
+  subtitle: 'Tanya seputar Islam',
+  inputPlaceholder: 'Tulis pertanyaan Anda…',
+  thinking: 'Mengetik…',
+  error: 'Gagal menjawab',
+  greeting: 'Halo, saya Qalbun AI',
+  emptyText: 'Tanyakan apa saja seputar Islam — fiqih, akhlak, kisah nabi, hingga tata cara ibadah.',
+}, {
+  title: 'Tanya Qalbun AI',
+  subtitle: 'Ask about Islam',
+  inputPlaceholder: 'Type your question…',
+  thinking: 'Thinking…',
+  error: 'Failed to answer',
+  greeting: 'Hi, I am Qalbun AI',
+  emptyText: 'Ask anything about Islam — fiqh, manners, prophet stories, and acts of worship.',
+});
+
+const TIPS: Record<'id' | 'en', string[]> = {
+  id: [
+    'Kisah Nabi Muhammad SAW',
+    'Tata cara shalat',
+    'Keutamaan sedekah',
+    "Adab membaca Al Qur'an",
+    'Doa sebelum tidur',
+  ],
+  en: [
+    'Story of Prophet Muhammad SAW',
+    'How to perform prayer',
+    'Virtues of giving charity',
+    "Etiquette of reading the Qur'an",
+    'Prayer before sleeping',
+  ],
+};
 
 interface ChatMessage {
   id: string;
@@ -42,8 +70,10 @@ function createId(prefix: string): string {
 }
 
 export default function QalbunAIScreen() {
+  const { t, lang } = useLang();
   const { colors, gradients, scheme } = useTheme();
   const styles = useMemo(() => makeStyles(colors, scheme), [colors, scheme]);
+  const tips = TIPS[lang];
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -81,7 +111,7 @@ export default function QalbunAIScreen() {
         {
           id: createId('err'),
           role: 'ai',
-          content: 'Gagal terhubung ke Qalbun AI. Periksa koneksi internet Anda lalu coba lagi.',
+          content: t('ai.error'),
           error: true,
         },
       ]);
@@ -128,7 +158,7 @@ export default function QalbunAIScreen() {
           <Text style={styles.errorText}>{item.content}</Text>
           <PressableScale onPress={() => retry(item.id)} style={styles.retryBtn}>
             <Ionicons name="refresh" size={14} color={colors.danger} />
-            <Text style={styles.retryText}>Coba Lagi</Text>
+            <Text style={styles.retryText}>{t('common.retry')}</Text>
           </PressableScale>
         </Animated.View>
       );
@@ -154,14 +184,14 @@ export default function QalbunAIScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}
       >
-        <PageHeader title="Tanya Qalbun AI" subtitle="Tanya seputar Islam" />
+        <PageHeader title={t('ai.title')} subtitle={t('ai.subtitle')} />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.tipsContent}
           style={styles.tipsRow}
         >
-          {TIPS.map((tip) => (
+          {tips.map((tip) => (
             <PressableScale key={tip} onPress={() => setInput(tip)} style={styles.tipChip}>
               <Ionicons name="flash" size={13} color={colors.gold} />
               <Text style={styles.tipText} numberOfLines={1}>
@@ -180,10 +210,8 @@ export default function QalbunAIScreen() {
             >
               <Ionicons name="chatbubbles" size={32} color={colors.gold} />
             </LinearGradient>
-            <Text style={styles.emptyTitle}>Halo, saya Qalbun AI</Text>
-            <Text style={styles.emptyText}>
-              Tanyakan apa saja seputar Islam — fiqih, akhlak, kisah nabi, hingga tata cara ibadah.
-            </Text>
+            <Text style={styles.emptyTitle}>{t('ai.greeting')}</Text>
+            <Text style={styles.emptyText}>{t('ai.emptyText')}</Text>
           </View>
         ) : (
           <FlatList
@@ -197,7 +225,7 @@ export default function QalbunAIScreen() {
               loading ? (
                 <View style={[styles.bubble, styles.loadingBubble]}>
                   <View style={styles.loadingInner}>
-                    <LoadingView label="Qalbun AI sedang berpikir..." />
+                    <LoadingView label={t('ai.thinking')} />
                   </View>
                 </View>
               ) : null
@@ -210,7 +238,7 @@ export default function QalbunAIScreen() {
               style={styles.input}
               value={input}
               onChangeText={setInput}
-              placeholder="Tulis pertanyaanmu..."
+              placeholder={t('ai.inputPlaceholder')}
               placeholderTextColor={colors.textFaint}
               multiline
               maxLength={500}

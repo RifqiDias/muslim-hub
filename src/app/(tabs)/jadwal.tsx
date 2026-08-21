@@ -10,6 +10,7 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SearchBar } from '@/components/ui/search-bar';
 import { SkeletonList } from '@/components/ui/skeleton';
+import { registerStrings, useLang } from '@/i18n';
 import { getPrayerTimes } from '@/lib/api';
 import { getString, removeItem, setString, StorageKeys } from '@/lib/storage';
 import type { PrayerTimesData } from '@/lib/types';
@@ -17,6 +18,52 @@ import { font, radius, shadow, spacing, ThemeColors, useTheme } from '@/theme';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 type ScheduleKey = 'Fajr' | 'Sunrise' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha';
+
+registerStrings('jadwal', {
+  title: 'Jadwal Shalat',
+  subtitle: 'Waktu shalat hari ini',
+  nextBadge: 'WAKTU BERIKUTNYA',
+  untilCaption: 'menuju waktu {name}',
+  autoLocation: 'Lokasi Otomatis',
+  chooseCity: 'Pilih Kota',
+  chooseCitySubtitle: 'Jadwal shalat akan mengikuti kota terpilih',
+  searchCity: 'Cari kota...',
+  autoOption: 'Lokasi otomatis',
+  autoOptionHint: 'Deteksi via alamat IP',
+  cityNotFound: 'Kota tidak ditemukan',
+  gregorian: 'Masehi',
+  hijri: 'Hijriah',
+  next: 'BERIKUTNYA',
+  timeImsak: 'Imsak',
+  timeFajr: 'Subuh',
+  timeSunrise: 'Terbit',
+  timeDhuhr: 'Dzuhur',
+  timeAsr: 'Ashar',
+  timeMaghrib: 'Maghrib',
+  timeIsha: 'Isya',
+}, {
+  title: 'Prayer Times',
+  subtitle: 'Today’s prayer times',
+  nextBadge: 'NEXT PRAYER',
+  untilCaption: 'until {name}',
+  autoLocation: 'Auto Location',
+  chooseCity: 'Choose City',
+  chooseCitySubtitle: 'Prayer times will follow the selected city',
+  searchCity: 'Search city...',
+  autoOption: 'Auto location',
+  autoOptionHint: 'IP detection',
+  cityNotFound: 'City not found',
+  gregorian: 'Gregorian',
+  hijri: 'Hijri',
+  next: 'NEXT',
+  timeImsak: 'Imsak',
+  timeFajr: 'Subuh',
+  timeSunrise: 'Sunrise',
+  timeDhuhr: 'Dzuhur',
+  timeAsr: 'Ashar',
+  timeMaghrib: 'Maghrib',
+  timeIsha: 'Isha',
+});
 
 const CITIES = [
   'jakarta',
@@ -51,22 +98,22 @@ const CITIES = [
 ];
 
 const NEXT_SEQUENCE: { key: ScheduleKey; label: string }[] = [
-  { key: 'Fajr', label: 'Subuh' },
-  { key: 'Sunrise', label: 'Terbit' },
-  { key: 'Dhuhr', label: 'Dzuhur' },
-  { key: 'Asr', label: 'Ashar' },
-  { key: 'Maghrib', label: 'Maghrib' },
-  { key: 'Isha', label: 'Isya' },
+  { key: 'Fajr', label: 'timeFajr' },
+  { key: 'Sunrise', label: 'timeSunrise' },
+  { key: 'Dhuhr', label: 'timeDhuhr' },
+  { key: 'Asr', label: 'timeAsr' },
+  { key: 'Maghrib', label: 'timeMaghrib' },
+  { key: 'Isha', label: 'timeIsha' },
 ];
 
 const TIME_ITEMS: { key: keyof PrayerTimesData['timings']; label: string; icon: IoniconName }[] = [
-  { key: 'Imsak', label: 'Imsak', icon: 'moon-outline' },
-  { key: 'Fajr', label: 'Subuh', icon: 'moon' },
-  { key: 'Sunrise', label: 'Terbit', icon: 'partly-sunny-outline' },
-  { key: 'Dhuhr', label: 'Dzuhur', icon: 'sunny-outline' },
-  { key: 'Asr', label: 'Ashar', icon: 'partly-sunny' },
-  { key: 'Maghrib', label: 'Maghrib', icon: 'moon' },
-  { key: 'Isha', label: 'Isya', icon: 'cloudy-night-outline' },
+  { key: 'Imsak', label: 'timeImsak', icon: 'moon-outline' },
+  { key: 'Fajr', label: 'timeFajr', icon: 'moon' },
+  { key: 'Sunrise', label: 'timeSunrise', icon: 'partly-sunny-outline' },
+  { key: 'Dhuhr', label: 'timeDhuhr', icon: 'sunny-outline' },
+  { key: 'Asr', label: 'timeAsr', icon: 'partly-sunny' },
+  { key: 'Maghrib', label: 'timeMaghrib', icon: 'moon' },
+  { key: 'Isha', label: 'timeIsha', icon: 'cloudy-night-outline' },
 ];
 
 const HERO_ORNAMENT: Record<ScheduleKey, IoniconName> = {
@@ -154,6 +201,7 @@ function HeroCard({
   onOpenCity: () => void;
 }) {
   const { colors, gradients } = useTheme();
+  const { t } = useLang();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
@@ -170,7 +218,7 @@ function HeroCard({
         <View style={styles.heroTop}>
           <View style={styles.heroBadge}>
             <Ionicons name="time-outline" size={12} color={colors.white} />
-            <Text style={styles.heroBadgeText}>WAKTU BERIKUTNYA</Text>
+            <Text style={styles.heroBadgeText}>{t('jadwal.nextBadge')}</Text>
           </View>
           <PressableScale onPress={onOpenCity} style={styles.heroCity} scaleTo={0.96}>
             <Ionicons name="location" size={12} color={colors.primaryDeep} />
@@ -181,7 +229,7 @@ function HeroCard({
           </PressableScale>
         </View>
         <View style={styles.heroBody}>
-          <Text style={styles.heroName}>{schedule.label}</Text>
+          <Text style={styles.heroName}>{t(`jadwal.${schedule.label}`)}</Text>
           <Text style={styles.heroTime} allowFontScaling={false}>
             {formatTime(schedule.time)}
           </Text>
@@ -191,7 +239,9 @@ function HeroCard({
           dayOffset={schedule.dayOffset}
           onExpire={onExpire}
         />
-        <Text style={styles.heroCaption}>menuju waktu {schedule.label}</Text>
+        <Text style={styles.heroCaption}>
+          {t('jadwal.untilCaption', { name: t(`jadwal.${schedule.label}`) })}
+        </Text>
       </LinearGradient>
     </Animated.View>
   );
@@ -205,6 +255,7 @@ function Timeline({
   timings: PrayerTimesData['timings'];
 }) {
   const { colors } = useTheme();
+  const { t } = useLang();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
@@ -220,7 +271,7 @@ function Timeline({
             <View key={item.key} style={[styles.pill, active && styles.pillActive]}>
               <Ionicons name={item.icon} size={17} color={active ? colors.primary : colors.gold} />
               <Text style={[styles.pillLabel, active && styles.pillLabelActive]} numberOfLines={1}>
-                {item.label}
+                {t(`jadwal.${item.label}`)}
               </Text>
               <Text style={styles.pillTime} allowFontScaling={false}>
                 {formatTime(timings[item.key])}
@@ -235,6 +286,7 @@ function Timeline({
 
 function DateCard({ data }: { data: PrayerTimesData }) {
   const { colors } = useTheme();
+  const { t } = useLang();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const hijri = data.date?.hijri;
   const hijriText = hijri ? [hijri.day, hijri.month?.en, hijri.year].filter(Boolean).join(' ') : '';
@@ -244,7 +296,7 @@ function DateCard({ data }: { data: PrayerTimesData }) {
       <View style={styles.dateCol}>
         <View style={styles.dateLabelRow}>
           <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
-          <Text style={styles.dateLabel}>Masehi</Text>
+          <Text style={styles.dateLabel}>{t('jadwal.gregorian')}</Text>
         </View>
         <Text style={styles.dateValue} numberOfLines={1}>
           {data.date?.readable ?? '-'}
@@ -254,7 +306,7 @@ function DateCard({ data }: { data: PrayerTimesData }) {
       <View style={[styles.dateCol, styles.dateColRight]}>
         <View style={styles.dateLabelRow}>
           <Ionicons name="moon-outline" size={12} color={colors.gold} />
-          <Text style={styles.dateLabelHijri}>Hijriah</Text>
+          <Text style={styles.dateLabelHijri}>{t('jadwal.hijri')}</Text>
         </View>
         <Text style={styles.dateValueHijri} numberOfLines={1}>
           {hijriText ? `${hijriText} H` : '-'}
@@ -278,6 +330,7 @@ function TimeRow({
   index: number;
 }) {
   const { colors } = useTheme();
+  const { t } = useLang();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
@@ -294,7 +347,7 @@ function TimeRow({
         </Text>
         {highlighted ? (
           <View style={styles.rowBadge}>
-            <Text style={styles.rowBadgeText}>BERIKUTNYA</Text>
+            <Text style={styles.rowBadgeText}>{t('jadwal.next')}</Text>
           </View>
         ) : null}
       </View>
@@ -351,6 +404,7 @@ function CityModal({
   onClose: () => void;
 }) {
   const { colors } = useTheme();
+  const { t } = useLang();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [query, setQuery] = useState('');
 
@@ -381,9 +435,9 @@ function CityModal({
         <Pressable style={[StyleSheet.absoluteFill, styles.modalScrim]} onPress={handleClose} />
         <View style={styles.modalCard}>
           <View style={styles.modalHandle} />
-          <Text style={styles.modalTitle}>Pilih Kota</Text>
-          <Text style={styles.modalSubtitle}>Jadwal shalat akan mengikuti kota terpilih</Text>
-          <SearchBar value={query} onChangeText={setQuery} placeholder="Cari kota..." />
+          <Text style={styles.modalTitle}>{t('jadwal.chooseCity')}</Text>
+          <Text style={styles.modalSubtitle}>{t('jadwal.chooseCitySubtitle')}</Text>
+          <SearchBar value={query} onChangeText={setQuery} placeholder={t('jadwal.searchCity')} />
           <ScrollView
             style={styles.modalList}
             contentContainerStyle={styles.modalListContent}
@@ -391,8 +445,8 @@ function CityModal({
           >
             <CityOption
               icon="navigate"
-              label="Lokasi otomatis"
-              hint="Deteksi via alamat IP"
+              label={t('jadwal.autoOption')}
+              hint={t('jadwal.autoOptionHint')}
               active={current === null}
               onPress={() => handleSelect(null)}
             />
@@ -405,7 +459,7 @@ function CityModal({
               />
             ))}
             {filtered.length === 0 ? (
-              <Text style={styles.modalEmpty}>Kota tidak ditemukan</Text>
+              <Text style={styles.modalEmpty}>{t('jadwal.cityNotFound')}</Text>
             ) : null}
           </ScrollView>
         </View>
@@ -416,6 +470,7 @@ function CityModal({
 
 export default function JadwalShalatScreen() {
   const { colors } = useTheme();
+  const { t } = useLang();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [city, setCity] = useState<string | null>(null);
   const [cityLoaded, setCityLoaded] = useState(false);
@@ -457,7 +512,7 @@ export default function JadwalShalatScreen() {
     }
     return {
       key: 'Fajr',
-      label: 'Subuh',
+      label: 'timeFajr',
       time: data.timings.Fajr,
       targetMinutes: toMinutes(data.timings.Fajr),
       dayOffset: 1,
@@ -477,14 +532,18 @@ export default function JadwalShalatScreen() {
 
   return (
     <Screen scroll refreshing={isRefetching} onRefresh={() => refetch()}>
-      <PageHeader back={false} title="Jadwal Shalat" subtitle="Waktu shalat hari ini" />
+      <PageHeader
+        back={false}
+        title={t('jadwal.title')}
+        subtitle={t('jadwal.subtitle')}
+      />
       {isPending ? <SkeletonList count={4} height={120} /> : null}
       {isError ? <ErrorState onRetry={() => refetch()} /> : null}
       {data && schedule ? (
         <>
           <HeroCard
             schedule={schedule}
-            cityName={city ? capitalize(city) : 'Lokasi Otomatis'}
+            cityName={city ? capitalize(city) : t('jadwal.autoLocation')}
             onExpire={handleExpire}
             onOpenCity={() => setModalVisible(true)}
           />
@@ -494,7 +553,7 @@ export default function JadwalShalatScreen() {
             {TIME_ITEMS.map((item, index) => (
               <TimeRow
                 key={item.key}
-                label={item.label}
+                label={t(`jadwal.${item.label}`)}
                 icon={item.icon}
                 time={data.timings[item.key]}
                 highlighted={schedule.key === item.key}

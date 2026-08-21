@@ -26,21 +26,37 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
+import { registerStrings, useLang } from '@/i18n';
 import { getDzikir } from '@/lib/api';
 import { DzikirItem, DzikirKind } from '@/lib/types';
 import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
 
-const TYPE_CONFIG: Record<string, { kind: DzikirKind; title: string; subtitle: string }> = {
-  pagi: { kind: 'dzikir-pagi', title: 'Dzikir Pagi', subtitle: 'Bacaan dzikir waktu pagi' },
-  petang: { kind: 'dzikir-petang', title: 'Dzikir Petang', subtitle: 'Bacaan dzikir waktu petang' },
-  'setelah-shalat': {
-    kind: 'dzikir-setelah-shalat',
-    title: 'Dzikir Setelah Shalat',
-    subtitle: 'Bacaan dzikir setelah shalat fardhu',
-  },
+registerStrings('dzikirRead', {
+  pagiTitle: 'Dzikir Pagi',
+  pagiSubtitle: 'Bacaan dzikir waktu pagi',
+  petangTitle: 'Dzikir Petang',
+  petangSubtitle: 'Bacaan dzikir waktu petang',
+  setelahShalatTitle: 'Dzikir Setelah Shalat',
+  setelahShalatSubtitle: 'Bacaan dzikir setelah shalat fardhu',
+  fawaid: 'Keutamaan',
+}, {
+  pagiTitle: 'Morning Dhikr',
+  pagiSubtitle: 'Morning dhikr recitations',
+  petangTitle: 'Evening Dhikr',
+  petangSubtitle: 'Evening dhikr recitations',
+  setelahShalatTitle: 'After Prayer',
+  setelahShalatSubtitle: 'Dhikr recited after obligatory prayers',
+  fawaid: 'Virtues',
+});
+
+const TYPE_CONFIG: Record<string, { kind: DzikirKind; label: string }> = {
+  pagi: { kind: 'dzikir-pagi', label: 'pagi' },
+  petang: { kind: 'dzikir-petang', label: 'petang' },
+  'setelah-shalat': { kind: 'dzikir-setelah-shalat', label: 'setelahShalat' },
 };
 
 export default function DzikirReaderScreen() {
+  const { t } = useLang();
   const { colors, gradients, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -89,7 +105,7 @@ export default function DzikirReaderScreen() {
   return (
     <Screen contentStyle={{ paddingHorizontal: 0, paddingTop: 0 }}>
       <View style={styles.headerWrap}>
-        <PageHeader title={config.title} subtitle={config.subtitle} />
+        <PageHeader title={t(`dzikirRead.${config.label}Title`)} subtitle={t(`dzikirRead.${config.label}Subtitle`)} />
         {total > 0 ? (
           <Animated.View entering={FadeInDown.duration(400).delay(80)} style={styles.progressRow}>
             <View style={[styles.track, { width: trackWidth }]}>
@@ -157,6 +173,7 @@ export default function DzikirReaderScreen() {
 }
 
 function DzikirPage({ item, width }: { item: DzikirItem; width: number }) {
+  const { t } = useLang();
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -179,7 +196,7 @@ function DzikirPage({ item, width }: { item: DzikirItem; width: number }) {
       ) : null}
       {item.fawaid ? (
         <View style={styles.fawaidCard}>
-          <Text style={styles.fawaidLabel}>Keutamaan</Text>
+          <Text style={styles.fawaidLabel}>{t('dzikirRead.fawaid')}</Text>
           <Text style={[typography.body, styles.fawaidText]}>{item.fawaid}</Text>
         </View>
       ) : null}

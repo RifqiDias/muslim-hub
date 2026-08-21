@@ -18,6 +18,8 @@ import {
   SurahSummary,
   TahlilItem,
   WiridItem,
+  QuranJsonSurah,
+  QuranJsonSurahDetail,
 } from './types';
 
 const API_BASE = 'https://api.qalbun.my.id';
@@ -53,6 +55,26 @@ async function apiGet<T>(path: string, params?: Record<string, string | number |
   }
   const json = (await res.json()) as T;
   return json;
+}
+
+/* --------------------------------- QuranJSON -------------------------------- */
+
+const QURANJSON_BASE = 'https://raw.githubusercontent.com/penggguna/QuranJSON/master';
+
+export async function getSurahListJson(): Promise<QuranJsonSurah[]> {
+  const res = await fetch(`${QURANJSON_BASE}/quran.json`);
+  if (!res.ok) {
+    throw new Error('Gagal memuat daftar surah.');
+  }
+  return (await res.json()) as QuranJsonSurah[];
+}
+
+export async function getSurahDetailJson(surah: number | string): Promise<QuranJsonSurahDetail> {
+  const res = await fetch(`${QURANJSON_BASE}/surah/${surah}.json`);
+  if (!res.ok) {
+    throw new Error('Gagal memuat detail surah.');
+  }
+  return (await res.json()) as QuranJsonSurahDetail;
 }
 
 /* ---------------------------------- Quran --------------------------------- */

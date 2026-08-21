@@ -9,10 +9,24 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Screen } from '@/components/ui/screen';
 import { SearchBar } from '@/components/ui/search-bar';
 import { SkeletonList } from '@/components/ui/skeleton';
+import { registerStrings, useLang } from '@/i18n';
 import { getDoaHarian } from '@/lib/api';
 import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
 
+registerStrings('doaHarian', {
+  title: 'Doa Harian',
+  subtitle: 'Doa untuk aktivitas sehari-hari',
+  emptyTitle: 'Tidak ditemukan',
+  emptyMessage: 'Coba kata kunci lain, misalnya "makan" atau "tidur".',
+}, {
+  title: 'Daily Duas',
+  subtitle: 'Duas for everyday activities',
+  emptyTitle: 'Not found',
+  emptyMessage: 'Try other keywords, e.g. "eating" or "sleeping".',
+});
+
 export default function DoaHarianScreen() {
+  const { t } = useLang();
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -32,7 +46,7 @@ export default function DoaHarianScreen() {
 
   return (
     <Screen scroll>
-      <PageHeader title="Doa Harian" subtitle="Doa untuk aktivitas sehari-hari" />
+      <PageHeader title={t('doaHarian.title')} subtitle={t('doaHarian.subtitle')} />
 
       {isPending ? (
         <SkeletonList count={5} height={140} />
@@ -43,14 +57,14 @@ export default function DoaHarianScreen() {
           <SearchBar
             value={query}
             onChangeText={setQuery}
-            placeholder="Cari doa, misal: makan, tidur..."
+            placeholder={t('common.search')}
           />
 
           {items.length === 0 ? (
             <View style={styles.empty}>
               <Ionicons name="search-outline" size={40} color={colors.textFaint} />
-              <Text style={[typography.h3, styles.emptyTitle]}>Tidak ditemukan</Text>
-              <Text style={[typography.caption, styles.emptyMessage]}>Coba kata kunci lain, misalnya &quot;makan&quot; atau &quot;tidur&quot;.</Text>
+              <Text style={[typography.h3, styles.emptyTitle]}>{t('doaHarian.emptyTitle')}</Text>
+              <Text style={[typography.caption, styles.emptyMessage]}>{t('doaHarian.emptyMessage')}</Text>
             </View>
           ) : (
             <View style={styles.list}>

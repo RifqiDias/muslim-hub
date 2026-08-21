@@ -14,38 +14,119 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
 import { SkeletonBlock } from '@/components/ui/skeleton';
+import { registerStrings, useLang, type I18n } from '@/i18n';
 import { getDoaPilihan, getPrayerTimes, getRandomWallpaper } from '@/lib/api';
 import { getString, StorageKeys } from '@/lib/storage';
 import { PrayerTimings } from '@/lib/types';
 import { ThemeColors, font, radius, spacing, useTheme } from '@/theme';
 
+registerStrings('home', {
+  salam: "Assalamu'alaikum",
+  morning: 'Selamat pagi',
+  afternoon: 'Selamat siang',
+  evening: 'Selamat sore',
+  night: 'Selamat malam',
+  nextPrayer: 'Shalat berikutnya',
+  remainingNow: 'waktunya telah tiba',
+  remainingMinutes: '{m} menit lagi',
+  remainingHours: '{h} jam lagi',
+  remainingHm: '{h} jam {m} menit lagi',
+  prayerError: 'Jadwal shalat gagal dimuat.',
+  wallpaperTitle: 'Wallpaper Islami',
+  wallpaperSubtitle: 'Hiasan layar penuh berkah',
+  wallpaperMore: 'Lainnya',
+  dailyDua: 'Doa Hari Ini',
+  quickMenu: 'Menu Cepat',
+  allFeatures: 'Semua Fitur',
+  prayerFajr: 'Subuh',
+  prayerDhuhr: 'Dzuhur',
+  prayerAsr: 'Ashar',
+  prayerMaghrib: 'Maghrib',
+  prayerIsha: 'Isya',
+  menuQuran: "Qur'an",
+  menuQuranSub: 'Mushaf & terjemahan',
+  menuJadwal: 'Jadwal Shalat',
+  menuJadwalSub: 'Waktu shalat harian',
+  menuDzikir: 'Dzikir',
+  menuDzikirSub: 'Pagi & petang',
+  menuHadits: 'Hadits',
+  menuHaditsSub: 'Kutipan sahih',
+  menuAsmaul: 'Asmaul Husna',
+  menuAsmaulSub: '99 nama Allah',
+  menuKisah: 'Kisah Nabi',
+  menuKisahSub: '25 nabi & rasul',
+  menuAi: 'Tanya AI',
+  menuAiSub: 'Qalbun AI',
+  menuAll: 'Semua',
+  menuAllSub: 'Lihat semua fitur',
+}, {
+  salam: "Assalamu'alaikum",
+  morning: 'Good morning',
+  afternoon: 'Good afternoon',
+  evening: 'Good evening',
+  night: 'Good night',
+  nextPrayer: 'Next prayer',
+  remainingNow: 'the time has come',
+  remainingMinutes: '{m}m left',
+  remainingHours: '{h}h left',
+  remainingHm: '{h}h {m}m left',
+  prayerError: 'Failed to load prayer times.',
+  wallpaperTitle: 'Islamic Wallpaper',
+  wallpaperSubtitle: 'Blessed decor for your screen',
+  wallpaperMore: 'More',
+  dailyDua: 'Daily Dua',
+  quickMenu: 'Quick Menu',
+  allFeatures: 'All Features',
+  prayerFajr: 'Fajr',
+  prayerDhuhr: 'Dhuhr',
+  prayerAsr: 'Asr',
+  prayerMaghrib: 'Maghrib',
+  prayerIsha: 'Isha',
+  menuQuran: "Qur'an",
+  menuQuranSub: 'Mushaf & translation',
+  menuJadwal: 'Prayer Times',
+  menuJadwalSub: 'Daily prayer times',
+  menuDzikir: 'Dhikr',
+  menuDzikirSub: 'Morning & evening',
+  menuHadits: 'Hadith',
+  menuHaditsSub: 'Authentic quotes',
+  menuAsmaul: 'Asmaul Husna',
+  menuAsmaulSub: '99 names of Allah',
+  menuKisah: 'Prophet Stories',
+  menuKisahSub: '25 prophets & messengers',
+  menuAi: 'Ask AI',
+  menuAiSub: 'Qalbun AI',
+  menuAll: 'All',
+  menuAllSub: 'Browse all features',
+});
+
 const WALL_BLURHASH = 'L6PZ0S^jE1of~qx]^%M{JeR*fiM{';
 
-const PRAYER_ORDER: { key: keyof PrayerTimings; label: string }[] = [
-  { key: 'Fajr', label: 'Subuh' },
-  { key: 'Dhuhr', label: 'Dzuhur' },
-  { key: 'Asr', label: 'Ashar' },
-  { key: 'Maghrib', label: 'Maghrib' },
-  { key: 'Isha', label: 'Isya' },
+const PRAYER_ORDER: { key: keyof PrayerTimings; labelPath: string }[] = [
+  { key: 'Fajr', labelPath: 'home.prayerFajr' },
+  { key: 'Dhuhr', labelPath: 'home.prayerDhuhr' },
+  { key: 'Asr', labelPath: 'home.prayerAsr' },
+  { key: 'Maghrib', labelPath: 'home.prayerMaghrib' },
+  { key: 'Isha', labelPath: 'home.prayerIsha' },
 ];
 
 interface QuickMenuItem {
-  title: string;
-  subtitle: string;
+  titlePath: string;
+  subtitlePath: string;
   icon: keyof typeof Ionicons.glyphMap;
   gradient: 'emerald' | 'teal' | 'gold' | 'night' | 'plum';
   href: Href;
 }
 
 const QUICK_MENU: QuickMenuItem[] = [
-  { title: "Qur'an", subtitle: 'Mushaf & terjemahan', icon: 'book', gradient: 'emerald', href: '/quran' },
-  { title: 'Jadwal Shalat', subtitle: 'Waktu shalat harian', icon: 'time', gradient: 'teal', href: '/jadwal' },
-  { title: 'Dzikir', subtitle: 'Pagi & petang', icon: 'moon', gradient: 'night', href: '/dzikir' },
-  { title: 'Hadits', subtitle: 'Kutipan sahih', icon: 'newspaper', gradient: 'gold', href: '/hadith' },
-  { title: 'Asmaul Husna', subtitle: '99 nama Allah', icon: 'sparkles', gradient: 'plum', href: '/asmaul-husna' },
-  { title: 'Kisah Nabi', subtitle: '25 nabi & rasul', icon: 'people', gradient: 'emerald', href: '/kisah-nabi' },
-  { title: 'Tanya AI', subtitle: 'Qalbun AI', icon: 'chatbubbles', gradient: 'night', href: '/ai' },
-  { title: 'Semua', subtitle: 'Lihat semua fitur', icon: 'grid', gradient: 'gold', href: '/more' },
+  { titlePath: 'home.menuQuran', subtitlePath: 'home.menuQuranSub', icon: 'book', gradient: 'emerald', href: '/quran' },
+  { titlePath: 'home.menuJadwal', subtitlePath: 'home.menuJadwalSub', icon: 'time', gradient: 'teal', href: '/jadwal' },
+  { titlePath: 'home.menuDzikir', subtitlePath: 'home.menuDzikirSub', icon: 'moon', gradient: 'night', href: '/dzikir' },
+  { titlePath: 'home.menuHadits', subtitlePath: 'home.menuHaditsSub', icon: 'newspaper', gradient: 'gold', href: '/hadith' },
+  { titlePath: 'home.menuAsmaul', subtitlePath: 'home.menuAsmaulSub', icon: 'sparkles', gradient: 'plum', href: '/asmaul-husna' },
+  { titlePath: 'home.menuKisah', subtitlePath: 'home.menuKisahSub', icon: 'people', gradient: 'emerald', href: '/kisah-nabi' },
+  { titlePath: 'home.menuAi', subtitlePath: 'home.menuAiSub', icon: 'chatbubbles', gradient: 'night', href: '/ai' },
+  { titlePath: 'home.menuAll', subtitlePath: 'home.menuAllSub', icon: 'grid', gradient: 'gold', href: '/more' },
 ];
 
 function parseHM(value: string): number | null {
@@ -60,13 +141,13 @@ function formatHM(total: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-function formatRemaining(minutes: number): string {
-  if (minutes <= 0) return 'waktunya telah tiba';
+function formatRemaining(minutes: number, t: I18n['t']): string {
+  if (minutes <= 0) return t('home.remainingNow');
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (h === 0) return `${m} menit lagi`;
-  if (m === 0) return `${h} jam lagi`;
-  return `${h} jam ${m} menit lagi`;
+  if (h === 0) return t('home.remainingMinutes', { m });
+  if (m === 0) return t('home.remainingHours', { h });
+  return t('home.remainingHm', { h, m });
 }
 
 function ThemeToggle() {
@@ -100,6 +181,7 @@ function ThemeToggle() {
 }
 
 export default function BerandaScreen() {
+  const { t, lang } = useLang();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [city, setCity] = useState<string | null>(null);
@@ -131,13 +213,13 @@ export default function BerandaScreen() {
 
   const greeting = useMemo(() => {
     const hour = now.getHours();
-    if (hour >= 4 && hour < 11) return 'Selamat pagi';
-    if (hour >= 11 && hour < 15) return 'Selamat siang';
-    if (hour >= 15 && hour < 18) return 'Selamat sore';
-    return 'Selamat malam';
-  }, [now]);
+    if (hour >= 4 && hour < 11) return t('home.morning');
+    if (hour >= 11 && hour < 15) return t('home.afternoon');
+    if (hour >= 15 && hour < 18) return t('home.evening');
+    return t('home.night');
+  }, [now, t]);
 
-  const gregorianText = now.toLocaleDateString('id-ID', {
+  const gregorianText = now.toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-US', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -161,12 +243,12 @@ export default function BerandaScreen() {
     for (const prayer of PRAYER_ORDER) {
       const parsed = parseHM(timings[prayer.key]);
       if (parsed !== null && parsed > minutesNow) {
-        return { label: prayer.label, minutes: parsed, remaining: parsed - minutesNow };
+        return { label: t(prayer.labelPath), minutes: parsed, remaining: parsed - minutesNow };
       }
     }
     const fajr = parseHM(timings.Fajr);
     if (fajr === null) return null;
-    return { label: 'Subuh', minutes: fajr, remaining: 1440 - minutesNow + fajr };
+    return { label: t('home.prayerFajr'), minutes: fajr, remaining: 1440 - minutesNow + fajr };
   })();
 
   const prayerFailed = prayerQuery.isError || (!prayerQuery.isLoading && !nextPrayer);
@@ -175,7 +257,7 @@ export default function BerandaScreen() {
     <Screen scroll>
       <Animated.View entering={FadeInDown.duration(450)} style={styles.headerRow}>
         <View style={styles.headerTitles}>
-          <Text style={styles.salam}>Assalamu&apos;alaikum</Text>
+          <Text style={styles.salam}>{t('home.salam')}</Text>
           <Text style={styles.greeting}>{greeting}</Text>
           <Text style={styles.dateText}>{gregorianText}</Text>
           {hijriText ? <Text style={styles.hijriText}>{hijriText}</Text> : null}
@@ -184,7 +266,7 @@ export default function BerandaScreen() {
       </Animated.View>
 
       {prayerFailed ? (
-        <ErrorState message="Jadwal shalat gagal dimuat." onRetry={() => prayerQuery.refetch()} />
+        <ErrorState message={t('home.prayerError')} onRetry={() => prayerQuery.refetch()} />
       ) : nextPrayer ? (
         <PressableScale onPress={() => router.push('/jadwal')} style={styles.prayerPress}>
           <Animated.View entering={FadeInDown.duration(450).delay(90)}>
@@ -193,12 +275,12 @@ export default function BerandaScreen() {
                 <Ionicons name="time" size={26} color={colors.gold} />
               </View>
               <View style={styles.prayerInfo}>
-                <Text style={styles.prayerLabel}>Shalat berikutnya</Text>
+                <Text style={styles.prayerLabel}>{t('home.nextPrayer')}</Text>
                 <View style={styles.prayerRow}>
                   <Text style={styles.prayerName}>{nextPrayer.label}</Text>
                   <Text style={styles.prayerTime}>{formatHM(nextPrayer.minutes)}</Text>
                 </View>
-                <Text style={styles.prayerCountdown}>{formatRemaining(nextPrayer.remaining)}</Text>
+                <Text style={styles.prayerCountdown}>{formatRemaining(nextPrayer.remaining, t)}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textFaint} />
             </View>
@@ -225,11 +307,11 @@ export default function BerandaScreen() {
               style={styles.heroOverlay}
             >
               <View style={styles.heroTitles}>
-                <Text style={styles.heroTitle}>Wallpaper Islami</Text>
-                <Text style={styles.heroSub}>Hiasan layar penuh berkah</Text>
+                <Text style={styles.heroTitle}>{t('home.wallpaperTitle')}</Text>
+                <Text style={styles.heroSub}>{t('home.wallpaperSubtitle')}</Text>
               </View>
               <PressableScale onPress={() => router.push('/wallpaper')} style={styles.heroBtn}>
-                <Text style={styles.heroBtnText}>Lainnya</Text>
+                <Text style={styles.heroBtnText}>{t('home.wallpaperMore')}</Text>
                 <Ionicons name="chevron-forward" size={14} color="#E8B44F" />
               </PressableScale>
             </LinearGradient>
@@ -240,8 +322,8 @@ export default function BerandaScreen() {
       {!doaQuery.isError ? (
         <View>
           <SectionHeader
-            title="Doa Hari Ini"
-            actionLabel="Lihat Semua"
+            title={t('home.dailyDua')}
+            actionLabel={t('common.seeAll')}
             onAction={() => router.push('/doa-pilihan')}
           />
           {doaQuery.isLoading || !doaHariIni ? (
@@ -270,16 +352,16 @@ export default function BerandaScreen() {
       ) : null}
 
       <SectionHeader
-        title="Menu Cepat"
-        actionLabel="Semua Fitur"
+        title={t('home.quickMenu')}
+        actionLabel={t('home.allFeatures')}
         onAction={() => router.push('/more')}
       />
       <View style={styles.menuGrid}>
         {QUICK_MENU.map((item, index) => (
-          <View key={item.title} style={styles.menuTile}>
+          <View key={item.titlePath} style={styles.menuTile}>
             <HomeTile
-              title={item.title}
-              subtitle={item.subtitle}
+              title={t(item.titlePath)}
+              subtitle={t(item.subtitlePath)}
               icon={item.icon}
               gradient={item.gradient}
               delay={index * 65}

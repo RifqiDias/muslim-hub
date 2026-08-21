@@ -10,6 +10,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ThemeProvider, useTheme } from '@/theme';
+import { I18nProvider } from '@/i18n';
+import '@/lib/strings-common';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -73,7 +75,9 @@ export default function RootLayout() {
   return (
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24 * 7 }}>
       <ThemeProvider>
-        <AppShell />
+        <I18nProvider>
+          <AppShell />
+        </I18nProvider>
       </ThemeProvider>
     </PersistQueryClientProvider>
   );

@@ -17,11 +17,33 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
+import { registerStrings, useLang } from '@/i18n';
 import { getWirid } from '@/lib/api';
 import { WiridItem } from '@/lib/types';
 import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
 
+registerStrings('wirid', {
+  title: 'Wirid & Tasbih',
+  subtitle: 'Ketuk wirid untuk mulai menghitung',
+  tapToCount: 'Ketuk lingkaran untuk menghitung',
+  done: 'Selesai',
+  of: 'dari {times}',
+  doneLabel: 'Wirid selesai, Alhamdulillah',
+  reset: 'Ulangi',
+  targetReached: 'Target tercapai',
+}, {
+  title: 'Wirid & Tasbih',
+  subtitle: 'Tap a wirid to start counting',
+  tapToCount: 'Tap the circle to count',
+  done: 'Done',
+  of: 'of {times}',
+  doneLabel: 'Wirid complete, Alhamdulillah',
+  reset: 'Reset',
+  targetReached: 'Target reached',
+});
+
 export default function WiridScreen() {
+  const { t } = useLang();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -34,7 +56,7 @@ export default function WiridScreen() {
 
   return (
     <Screen scroll>
-      <PageHeader title="Wirid & Tasbih" subtitle="Ketuk wirid untuk mulai menghitung" />
+      <PageHeader title={t('wirid.title')} subtitle={t('wirid.subtitle')} />
 
       {isPending ? (
         <SkeletonList count={5} height={110} />
@@ -52,6 +74,7 @@ export default function WiridScreen() {
 }
 
 function WiridCard({ item, delay }: { item: WiridItem; delay: number }) {
+  const { t } = useLang();
   const { colors, typography } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -132,15 +155,15 @@ function WiridCard({ item, delay }: { item: WiridItem; delay: number }) {
                 {count}
               </Animated.Text>
               <Text style={[styles.circleCaption, done && styles.circleCaptionDone]}>
-                {done ? 'Selesai' : `dari ${item.times}`}
+                {done ? t('wirid.done') : t('wirid.of', { times: item.times })}
               </Text>
             </PressableScale>
 
             <View style={styles.barMeta}>
-              <Text style={[typography.caption, styles.barLabel]}>{done ? 'Wirid selesai, Alhamdulillah' : 'Ketuk lingkaran untuk menghitung'}</Text>
+              <Text style={[typography.caption, styles.barLabel]}>{done ? t('wirid.doneLabel') : t('wirid.tapToCount')}</Text>
               <PressableScale onPress={reset} haptic={false} hitSlop={8} style={styles.resetBtn}>
                 <Ionicons name="refresh" size={16} color={colors.textMuted} />
-                <Text style={styles.resetText}>Reset</Text>
+                <Text style={styles.resetText}>{t('wirid.reset')}</Text>
               </PressableScale>
             </View>
             <View style={[styles.barTrack, done && styles.barTrackDone]}>
@@ -149,7 +172,7 @@ function WiridCard({ item, delay }: { item: WiridItem; delay: number }) {
             {done ? (
               <Animated.View entering={ZoomIn.springify()} style={styles.doneChip}>
                 <Ionicons name="checkmark-circle" size={16} color={colors.gold} />
-                <Text style={styles.doneText}>Target tercapai</Text>
+                <Text style={styles.doneText}>{t('wirid.targetReached')}</Text>
               </Animated.View>
             ) : null}
           </Animated.View>

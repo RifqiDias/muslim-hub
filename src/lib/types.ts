@@ -108,7 +108,43 @@ export interface PrayerTimesData {
   meta?: Record<string, unknown>;
 }
 
-/* ------------------------------- Simple JSON ------------------------------ */
+/* ------------------------------- QuranJSON -------------------------------- */
+
+export interface QuranJsonSurah {
+  name: string;
+  name_translations: { ar: string; en: string; id: string };
+  number_of_ayah: number;
+  number_of_surah: number;
+  place: string;
+  recitation: string;
+  type: string;
+}
+
+export interface QuranJsonReciter {
+  name: string;
+  audio_url: string;
+}
+
+export interface QuranJsonVerse {
+  number: number;
+  text: string;
+  translation_en: string;
+  translation_id: string;
+}
+
+export interface QuranJsonSurahDetail {
+  name: string;
+  name_translations: { ar: string; en: string; id: string };
+  number_of_ayah: number;
+  number_of_surah: number;
+  place: string;
+  recitations: QuranJsonReciter[];
+  type: string;
+  verses: QuranJsonVerse[];
+  tafsir?: { id?: { kemenag?: { name?: string; source?: string; text?: Record<string, string> } } };
+}
+
+/* ------------------------------ Simple JSON ------------------------------ */
 
 export interface AsmaulHusnaItem {
   index: string;
