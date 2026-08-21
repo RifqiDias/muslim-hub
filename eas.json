@@ -15,6 +15,9 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "NPM_CONFIG_STRICT_DEP_BUILDS": "false"
+      },
       "android": {
         "buildType": "app-bundle"
       }
