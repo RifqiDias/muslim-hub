@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { ArabicText } from '@/components/ui/arabic-text';
@@ -78,7 +78,7 @@ export default function MushafScreen() {
     const parsed = Number.parseInt(pageParam ?? '', 10);
     return Number.isNaN(parsed) ? 0 : Math.min(Math.max(parsed - 1, 0), 603);
   });
-  const [chromeVisible, setChromeVisible] = useState(true);
+  const [chromeVisible, setChromeVisible] = useState(false);
   const [fontStep, setFontStep] = useState(1);
 
   const { data, isPending, isError, refetch } = useQuery({
@@ -156,45 +156,50 @@ export default function MushafScreen() {
   const renderItem = ({ index }: { index: number }) => {
     const items = pages[index];
     const blocks = buildPageBlocks(items, data.surahNames);
-    const firstAyah = items[0];
 
     return (
       <Pressable style={[styles.page, { width }]} onPress={() => setChromeVisible((value) => !value)}>
         <View style={styles.pagePaper}>
-          {blocks.map((block, blockIndex) => {
-            if (block.type === 'header' && block.surahNumber && block.surahName) {
-              const showBismillah = block.surahNumber !== 1 && block.surahNumber !== 9;
-              return (
-                <View key={`h-${blockIndex}`} style={styles.headerBlock}>
-                  <View style={styles.surahRule} />
-                  <ArabicText size={20} bold center color={colors.primary}>
-                    {block.surahName.replace('سُورَةُ ', '')}
-                  </ArabicText>
-                  <View style={styles.surahRule} />
-                  {showBismillah ? (
-                    <ArabicText size={arabicSize - 4} center color={colors.textMuted}>
-                      بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+          <ScrollView
+            style={styles.pageScroll}
+            contentContainerStyle={styles.pageScrollContent}
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled
+          >
+            {blocks.map((block, blockIndex) => {
+              if (block.type === 'header' && block.surahNumber && block.surahName) {
+                const showBismillah = block.surahNumber !== 1 && block.surahNumber !== 9;
+                return (
+                  <View key={`h-${blockIndex}`} style={styles.headerBlock}>
+                    <View style={styles.surahRule} />
+                    <ArabicText size={20} bold center color={colors.primary}>
+                      {block.surahName.replace('سُورَةُ ', '')}
                     </ArabicText>
-                  ) : null}
-                </View>
+                    <View style={styles.surahRule} />
+                    {showBismillah ? (
+                      <ArabicText size={Math.max(arabicSize - 4, 16)} center color={colors.textMuted}>
+                        بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+                      </ArabicText>
+                    ) : null}
+                  </View>
+                );
+              }
+              const ayah = block.ayah;
+              if (!ayah) return null;
+              return (
+                <ArabicText key={`a-${ayah.surah}-${ayah.ayah}`} size={arabicSize} style={styles.ayahFlow}>
+                  {ayah.text}
+                  <Text style={styles.ayahMarker}> ﴿{toArabicNumber(ayah.ayah)}﴾</Text>
+                </ArabicText>
               );
-            }
-            const ayah = block.ayah;
-            if (!ayah) return null;
-            return (
-              <ArabicText key={`a-${ayah.surah}-${ayah.ayah}`} size={arabicSize} style={styles.ayahFlow}>
-                {ayah.text}
-                <Text style={styles.ayahMarker}> ﴿{toArabicNumber(ayah.ayah)}﴾</Text>
-              </ArabicText>
-            );
-          })}
+            })}
+          </ScrollView>
         </View>
         <View style={styles.pageFooter}>
           <View style={styles.pageNumberChip}>
             <Text style={styles.pageNumberText}>{toArabicNumber(index + 1)}</Text>
           </View>
         </View>
-        {firstAyah ? null : <View />}
       </Pressable>
     );
   };
@@ -295,8 +300,9 @@ const makeStyles = (c: ThemeColors, scheme: 'light' | 'dark') =>
     },
     page: {
       flex: 1,
-      paddingHorizontal: 10,
-      paddingVertical: spacing.base,
+      paddingHorizontal: 6,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.xs,
     },
     pagePaper: {
       flex: 1,
@@ -304,10 +310,18 @@ const makeStyles = (c: ThemeColors, scheme: 'light' | 'dark') =>
       borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: c.border,
-      paddingVertical: spacing.xl,
-      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
       borderLeftWidth: 4,
       borderLeftColor: c.gold,
+      overflow: 'hidden',
+    },
+    pageScroll: {
+      flex: 1,
+    },
+    pageScrollContent: {
+      paddingBottom: spacing.lg,
+      flexGrow: 1,
     },
     headerBlock: {
       alignItems: 'center',
