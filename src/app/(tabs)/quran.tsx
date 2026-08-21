@@ -145,7 +145,6 @@ export default function QuranListScreen() {
               item={item}
               index={index}
               meaning={meaning(item)}
-              typeLabel={item.type === 'Madaniyah' ? t('quranList.madaniyah') : t('quranList.makkiyah')}
               versesLabel={t('quranList.verses', { count: item.number_of_ayah })}
             />
           )}
@@ -159,13 +158,11 @@ function SurahRow({
   item,
   index,
   meaning,
-  typeLabel,
   versesLabel,
 }: {
   item: QuranJsonSurah;
   index: number;
   meaning: string;
-  typeLabel: string;
   versesLabel: string;
 }) {
   const { colors } = useTheme();
@@ -178,28 +175,19 @@ function SurahRow({
           router.push({ pathname: '/quran/[surah]', params: { surah: String(item.number_of_surah) } })
         }
         style={styles.rowPress}
+        scaleTo={0.98}
       >
         <View style={styles.row}>
-          <View style={styles.numberBadge}>
-            <Text style={styles.numberText}>{item.number_of_surah}</Text>
-          </View>
+          <Text style={styles.numberText}>{item.number_of_surah}</Text>
           <View style={styles.rowTexts}>
             <Text style={styles.name} numberOfLines={1}>
               {item.name}
             </Text>
-            <Text style={styles.meaning} numberOfLines={1}>
-              {meaning}
+            <Text style={styles.meta} numberOfLines={1}>
+              {meaning} · {versesLabel}
             </Text>
-            <View style={styles.chips}>
-              <View style={styles.chip}>
-                <Text style={styles.chipText}>{typeLabel}</Text>
-              </View>
-              <View style={styles.chip}>
-                <Text style={styles.chipText}>{versesLabel}</Text>
-              </View>
-            </View>
           </View>
-          <ArabicText size={22} color={colors.gold} numberOfLines={1}>
+          <ArabicText size={18} color={colors.gold} numberOfLines={1}>
             {item.name_translations.ar}
           </ArabicText>
         </View>
@@ -220,7 +208,6 @@ const makeStyles = (c: ThemeColors) =>
       paddingHorizontal: spacing.base,
       paddingTop: spacing.md,
       paddingBottom: spacing.xxl,
-      gap: spacing.md,
     },
     body: {
       paddingHorizontal: spacing.base,
@@ -242,9 +229,9 @@ const makeStyles = (c: ThemeColors) =>
       padding: spacing.md,
     },
     lastReadIcon: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
+      width: 30,
+      height: 30,
+      borderRadius: 15,
       backgroundColor: c.surface,
       alignItems: 'center',
       justifyContent: 'center',
@@ -294,61 +281,37 @@ const makeStyles = (c: ThemeColors) =>
       textAlign: 'center',
     },
     rowPress: {
-      borderRadius: radius.lg,
+      borderRadius: radius.md,
     },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.md,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: radius.lg,
-      padding: spacing.md,
-    },
-    numberBadge: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      borderWidth: 1.5,
-      borderColor: c.primary,
-      backgroundColor: c.primarySoft,
-      alignItems: 'center',
-      justifyContent: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: spacing.xs,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
     },
     numberText: {
-      fontFamily: font.bold,
-      fontSize: 15,
-      color: c.primary,
+      width: 26,
+      textAlign: 'center',
+      fontFamily: font.semibold,
+      fontSize: 12.5,
+      fontVariant: ['tabular-nums'],
+      color: c.textFaint,
     },
     rowTexts: {
       flex: 1,
     },
     name: {
-      fontFamily: font.bold,
-      fontSize: 15.5,
+      fontFamily: font.semibold,
+      fontSize: 15,
       color: c.text,
     },
-    meaning: {
+    meta: {
       fontFamily: font.regular,
-      fontSize: 12,
+      fontSize: 11.5,
       color: c.textMuted,
       marginTop: 1,
-    },
-    chips: {
-      flexDirection: 'row',
-      gap: 6,
-      marginTop: 6,
-    },
-    chip: {
-      backgroundColor: c.surfaceAlt,
-      borderRadius: radius.full,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-    },
-    chipText: {
-      fontFamily: font.semibold,
-      fontSize: 10,
-      color: c.textMuted,
     },
   });
