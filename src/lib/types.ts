@@ -144,6 +144,23 @@ export interface QuranJsonSurahDetail {
   tafsir?: { id?: { kemenag?: { name?: string; source?: string; text?: Record<string, string> } } };
 }
 
+export interface AlQuranCloudAyah {
+  number: number;
+  text: string;
+  numberInSurah: number;
+}
+
+export interface AlQuranCloudSurah {
+  number: number;
+  name: string;
+  englishName: string;
+  englishNameTranslation: string;
+  revelationType: string;
+  numberOfAyahs: number;
+  ayahs: AlQuranCloudAyah[];
+  edition: Record<string, unknown>;
+}
+
 /* ------------------------------ Simple JSON ------------------------------ */
 
 export interface AsmaulHusnaItem {

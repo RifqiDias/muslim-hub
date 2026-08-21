@@ -15,7 +15,7 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
 import { registerStrings, useLang, type Lang } from '@/i18n';
-import { getSurahDetailJson } from '@/lib/api';
+import { getSurahDetailJson, getSurahTransliteration } from '@/lib/api';
 import { getString, setJSON, setString, StorageKeys } from '@/lib/storage';
 import { QuranJsonVerse } from '@/lib/types';
 import { ThemeColors, font, radius, spacing, useTheme } from '@/theme';
@@ -28,6 +28,7 @@ registerStrings('surahDetail', {
   tafsirVerse: 'Tafsir Kemenag',
   tafsirSurah: 'Tafsir Surah',
   translation: 'Terjemahan',
+  latin: 'Latin',
 }, {
   loadingSubtitle: 'Loading surah data...',
   errorSubtitle: 'Failed to load',
@@ -36,9 +37,11 @@ registerStrings('surahDetail', {
   tafsirVerse: 'Kemenag Tafsir',
   tafsirSurah: 'Surah Tafsir',
   translation: 'Translation',
+  latin: 'Latin',
 });
 
 const TRANSLATION_KEY = 'muslimhub.quran.translation';
+const LATIN_KEY = 'muslimhub.quran.latin';
 
 export default function SurahDetailScreen() {
   const { t, lang } = useLang();
@@ -49,6 +52,7 @@ export default function SurahDetailScreen() {
   const surahParam = surah ?? '1';
   const [tafsirOpen, setTafsirOpen] = useState(false);
   const [translationLang, setTranslationLang] = useState<Lang>(lang);
+  const [latinVisible, setLatinVisible] = useState(true);
 
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['quranjson-surah', surahParam],
@@ -57,10 +61,23 @@ export default function SurahDetailScreen() {
     gcTime: Infinity,
   });
 
+  const translitQuery = useQuery({
+    queryKey: ['quranjson-translit', surahParam],
+    queryFn: () => getSurahTransliteration(surahParam),
+    staleTime: Infinity,
+    gcTime: Infinity,
+    retry: 1,
+  });
+
   useEffect(() => {
     getString(TRANSLATION_KEY)
       .then((value) => {
         if (value === 'en' || value === 'id') setTranslationLang(value);
+      })
+      .catch(() => undefined);
+    getString(LATIN_KEY)
+      .then((value) => {
+        if (value === 'off') setLatinVisible(false);
       })
       .catch(() => undefined);
   }, []);
@@ -78,6 +95,12 @@ export default function SurahDetailScreen() {
   const switchTranslation = (next: Lang) => {
     setTranslationLang(next);
     setString(TRANSLATION_KEY, next).catch(() => undefined);
+  };
+
+  const toggleLatin = () => {
+    const next = !latinVisible;
+    setLatinVisible(next);
+    setString(LATIN_KEY, next ? 'on' : 'off').catch(() => undefined);
   };
 
   if (isPending) {
@@ -112,6 +135,8 @@ export default function SurahDetailScreen() {
             index={index}
             surahName={data.name}
             translationLang={translationLang}
+            transliteration={translitQuery.data?.get(item.number) ?? null}
+            latinVisible={latinVisible}
             tafsirText={data.tafsir?.id?.kemenag?.text?.[String(item.number)] ?? null}
           />
         )}
@@ -155,24 +180,44 @@ export default function SurahDetailScreen() {
             ) : null}
             <View style={styles.translationSwitchRow}>
               <Text style={styles.translationLabel}>{t('surahDetail.translation')}</Text>
-              <View style={styles.translationSwitch}>
-                {(['id', 'en'] as Lang[]).map((code) => {
-                  const active = translationLang === code;
-                  return (
-                    <PressableScale
-                      key={code}
-                      onPress={() => switchTranslation(code)}
-                      haptic={false}
-                      style={styles.translationOptionPress}
-                    >
-                      <View style={[styles.translationOption, active && styles.translationOptionActive]}>
-                        <Text style={[styles.translationOptionText, active && styles.translationOptionTextActive]}>
-                          {code === 'id' ? 'Indonesia' : 'English'}
-                        </Text>
-                      </View>
-                    </PressableScale>
-                  );
-                })}
+              <View style={styles.translationControls}>
+                <View style={styles.translationSwitch}>
+                  {(['id', 'en'] as Lang[]).map((code) => {
+                    const active = translationLang === code;
+                    return (
+                      <PressableScale
+                        key={code}
+                        onPress={() => switchTranslation(code)}
+                        haptic={false}
+                        style={styles.translationOptionPress}
+                      >
+                        <View style={[styles.translationOption, active && styles.translationOptionActive]}>
+                          <Text style={[styles.translationOptionText, active && styles.translationOptionTextActive]}>
+                            {code === 'id' ? 'Indonesia' : 'English'}
+                          </Text>
+                        </View>
+                      </PressableScale>
+                    );
+                  })}
+                </View>
+                <PressableScale onPress={toggleLatin} haptic={false} style={styles.translationOptionPress}>
+                  <View
+                    style={[
+                      styles.translationOption,
+                      latinVisible && styles.translationOptionActive,
+                      !latinVisible && styles.latinOptionIdle,
+                    ]}
+                  >
+                    <Ionicons
+                      name="language"
+                      size={12}
+                      color={latinVisible ? colors.primary : colors.textMuted}
+                    />
+                    <Text style={[styles.translationOptionText, latinVisible && styles.translationOptionTextActive]}>
+                      {t('surahDetail.latin')}
+                    </Text>
+                  </View>
+                </PressableScale>
               </View>
             </View>
             <PressableScale onPress={() => setTafsirOpen((value) => !value)} style={styles.tafsirToggle}>
@@ -204,12 +249,16 @@ function VerseCard({
   index,
   surahName,
   translationLang,
+  transliteration,
+  latinVisible,
   tafsirText,
 }: {
   verse: QuranJsonVerse;
   index: number;
   surahName: string;
   translationLang: Lang;
+  transliteration: string | null;
+  latinVisible: boolean;
   tafsirText: string | null;
 }) {
   const { t } = useLang();
@@ -263,6 +312,9 @@ function VerseCard({
         </View>
       </View>
       <ArabicText size={28}>{verse.text}</ArabicText>
+      {latinVisible && transliteration ? (
+        <Text style={styles.verseTransliteration}>{transliteration}</Text>
+      ) : null}
       <Text style={styles.verseTranslation}>{translation}</Text>
       {tafsirText && tafsirOpen ? (
         <Animated.View entering={FadeIn.duration(250)} style={styles.verseTafsir}>
@@ -333,6 +385,13 @@ const makeStyles = (c: ThemeColors) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       marginTop: spacing.md,
+      gap: spacing.sm,
+      flexWrap: 'wrap',
+    },
+    translationControls: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
     },
     translationLabel: {
       fontFamily: font.semibold,
@@ -367,6 +426,11 @@ const makeStyles = (c: ThemeColors) =>
     },
     translationOptionTextActive: {
       color: c.primary,
+    },
+    latinOptionIdle: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
     },
     tafsirToggle: {
       flexDirection: 'row',
@@ -442,6 +506,13 @@ const makeStyles = (c: ThemeColors) =>
       borderRadius: 17,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    verseTransliteration: {
+      fontFamily: font.regular,
+      fontSize: 12.5,
+      lineHeight: 19,
+      fontStyle: 'italic',
+      color: c.gold,
     },
     verseTranslation: {
       fontFamily: font.regular,

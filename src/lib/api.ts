@@ -20,6 +20,7 @@ import {
   WiridItem,
   QuranJsonSurah,
   QuranJsonSurahDetail,
+  AlQuranCloudSurah,
 } from './types';
 
 const API_BASE = 'https://api.qalbun.my.id';
@@ -75,6 +76,21 @@ export async function getSurahDetailJson(surah: number | string): Promise<QuranJ
     throw new Error('Gagal memuat detail surah.');
   }
   return (await res.json()) as QuranJsonSurahDetail;
+}
+
+const ALQURANCLOUD_BASE = 'https://api.alquran.cloud/v1';
+
+export async function getSurahTransliteration(surah: number | string): Promise<Map<number, string>> {
+  const res = await fetch(`${ALQURANCLOUD_BASE}/surah/${surah}/en.transliteration`);
+  if (!res.ok) {
+    throw new Error('Gagal memuat transliterasi.');
+  }
+  const json = (await res.json()) as { code: number; data: AlQuranCloudSurah };
+  const map = new Map<number, string>();
+  for (const ayah of json.data.ayahs) {
+    map.set(ayah.numberInSurah, ayah.text);
+  }
+  return map;
 }
 
 /* ---------------------------------- Quran --------------------------------- */
