@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { ArabicText } from '@/components/ui/arabic-text';
@@ -159,56 +159,14 @@ export default function MushafScreen() {
   const pages = data.pages;
   const arabicSize = FONT_STEPS[Math.min(fontStep, FONT_STEPS.length - 1)];
 
-  const renderItem = ({ index }: { index: number }) => {
-    const items = pages[index];
-    const blocks = buildPageBlocks(items, data.surahNames);
-
-    return (
-      <Pressable style={[styles.page, { width }]} onPress={() => setChromeVisible((value) => !value)}>
-        <View style={styles.pagePaper}>
-          <ScrollView
-            style={styles.pageScroll}
-            contentContainerStyle={styles.pageScrollContent}
-            showsVerticalScrollIndicator={false}
-            nestedScrollEnabled
-          >
-            {blocks.map((block, blockIndex) => {
-              if (block.type === 'header' && block.surahNumber && block.surahName) {
-                const showBismillah = block.surahNumber !== 1 && block.surahNumber !== 9;
-                return (
-                  <View key={`h-${blockIndex}`} style={styles.headerBlock}>
-                    <View style={styles.surahRule} />
-                    <ArabicText size={20} bold center color={colors.primary}>
-                      {block.surahName.replace('سُورَةُ ', '')}
-                    </ArabicText>
-                    <View style={styles.surahRule} />
-                    {showBismillah ? (
-                      <ArabicText size={Math.max(arabicSize - 4, 16)} center color={colors.textMuted}>
-                        بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
-                      </ArabicText>
-                    ) : null}
-                  </View>
-                );
-              }
-              const ayah = block.ayah;
-              if (!ayah) return null;
-              return (
-                <ArabicText key={`a-${ayah.surah}-${ayah.ayah}`} size={arabicSize} style={styles.ayahFlow}>
-                  {ayah.text}
-                  <Text style={styles.ayahMarker}> ﴿{toArabicNumber(ayah.ayah)}﴾</Text>
-                </ArabicText>
-              );
-            })}
-          </ScrollView>
-        </View>
-        <View style={styles.pageFooter}>
-          <View style={styles.pageNumberChip}>
-            <Text style={styles.pageNumberText}>{toArabicNumber(index + 1)}</Text>
-          </View>
-        </View>
-      </Pressable>
-    );
-  };
+  const renderItem = ({ index }: { index: number }) => (
+    <MushafPage
+      index={index}
+      blocks={buildPageBlocks(pages[index], data.surahNames)}
+      arabicSize={arabicSize}
+      onTap={() => setChromeVisible((value) => !value)}
+    />
+  );
 
   const currentSurah = pages[currentPage]?.[0]?.surah ?? 1;
 
@@ -278,6 +236,92 @@ export default function MushafScreen() {
           </View>
         </Animated.View>
       ) : null}
+    </View>
+  );
+}
+
+function MushafPage({
+  index,
+  blocks,
+  arabicSize,
+  onTap,
+}: {
+  index: number;
+  blocks: PageBlock[];
+  arabicSize: number;
+  onTap: () => void;
+}) {
+  const { colors, scheme } = useTheme();
+  const styles = useMemo(() => makeStyles(colors, scheme), [colors, scheme]);
+  const { width } = useWindowDimensions();
+  const touchStart = useRef<{ x: number; y: number; t: number } | null>(null);
+
+  const handleTouchStart = (event: { nativeEvent: { pageX: number; pageY: number } }) => {
+    touchStart.current = {
+      x: event.nativeEvent.pageX,
+      y: event.nativeEvent.pageY,
+      t: Date.now(),
+    };
+  };
+
+  const handleTouchEnd = (event: { nativeEvent: { pageX: number; pageY: number } }) => {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start) return;
+    const dx = Math.abs(event.nativeEvent.pageX - start.x);
+    const dy = Math.abs(event.nativeEvent.pageY - start.y);
+    if (dx < 10 && dy < 10 && Date.now() - start.t < 350) {
+      onTap();
+    }
+  };
+
+  return (
+    <View
+      style={[styles.page, { width }]}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      <View style={styles.pagePaper}>
+        <ScrollView
+          style={styles.pageScroll}
+          contentContainerStyle={styles.pageScrollContent}
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled
+        >
+          {blocks.map((block, blockIndex) => {
+            if (block.type === 'header' && block.surahNumber && block.surahName) {
+              const showBismillah = block.surahNumber !== 1 && block.surahNumber !== 9;
+              return (
+                <View key={`h-${blockIndex}`} style={styles.headerBlock}>
+                  <View style={styles.surahRule} />
+                  <ArabicText size={20} bold center color={colors.primary}>
+                    {block.surahName.replace('سُورَةُ ', '')}
+                  </ArabicText>
+                  <View style={styles.surahRule} />
+                  {showBismillah ? (
+                    <ArabicText size={Math.max(arabicSize - 4, 16)} center color={colors.textMuted}>
+                      بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+                    </ArabicText>
+                  ) : null}
+                </View>
+              );
+            }
+            const ayah = block.ayah;
+            if (!ayah) return null;
+            return (
+              <ArabicText key={`a-${ayah.surah}-${ayah.ayah}`} size={arabicSize} style={styles.ayahFlow}>
+                {ayah.text}
+                <Text style={styles.ayahMarker}> ﴿{toArabicNumber(ayah.ayah)}﴾</Text>
+              </ArabicText>
+            );
+          })}
+        </ScrollView>
+      </View>
+      <View style={styles.pageFooter}>
+        <View style={styles.pageNumberChip}>
+          <Text style={styles.pageNumberText}>{toArabicNumber(index + 1)}</Text>
+        </View>
+      </View>
     </View>
   );
 }
