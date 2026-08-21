@@ -1,56 +1,66 @@
-# Welcome to your Expo app 👋
+# Muslim Hub
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplikasi islami modern berbasis **React Native + Expo SDK 57** — animatif, elegan, siap rilis ke Google Play Store.
 
-## Get started
+![platform](https://img.shields.io/badge/platform-Android-34D399) ![expo](https://img.shields.io/badge/Expo-SDK%2057-000000) ![ts](https://img.shields.io/badge/TypeScript-strict-3178C6)
 
-1. Install dependencies
+## Fitur
 
-   ```bash
-   npm install
-   ```
+- **Al Qur'an** — 114 surah, terjemahan Indonesia, tafsir, penanda terakhir dibaca
+- **Jadwal Shalat** — waktu shalat per kota/kategori otomatis, countdown realtime, tanggal Hijriah
+- **Dzikir** — pagi, petang & setelah shalat dengan mode baca per halaman + progress bar
+- **Wirid** — daftar wirid + tasbih digital interaktif (haptic feedback)
+- **Hadits** — 9 kitab (Bukhari, Muslim, dst), browsing per rentang + pencarian nomor
+- **Asmaul Husna** — 99 nama Allah dengan favorit & berbagi
+- **Kisah 25 Nabi** — lengkap dengan detail usia & tahun kelahiran
+- **Tahlil, Doa Harian, Doa Pilihan, Niat & Bacaan Shalat, Ayat Kursi**
+- **Iqra** — unduh & buka PDF Iqra jilid 1–6
+- **Wallpaper Islami** — wallpaper acak dengan simpan ke galeri
+- **Tanya Qalbun AI** — asisten tanya-jawab seputar Islam
 
-2. Start the app
+Semua data dari [api.qalbun.my.id](https://api.qalbun.my.id) dengan **cache lokal 24 jam** (React Query + AsyncStorage) untuk menghemat limit API.
 
-   ```bash
-   npx expo start
-   ```
+## Struktur
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+src/
+├── app/                # expo-router (file-based routing)
+│   ├── _layout.tsx     # root: fonts, React Query persistence
+│   ├── (tabs)/         # 5 tab: Beranda, Qur'an, Shalat, Dzikir, Lainnya
+│   └── ...             # layar fitur lainnya
+├── components/ui/      # komponen animatif bersama (Reanimated)
+├── lib/
+│   ├── api.ts          # klien API bertipe
+│   ├── types.ts        # kontrak respons API
+│   └── storage.ts      # helper AsyncStorage
+└── theme.ts            # desain token (warna, font, spacing)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Menjalankan
 
-### Other setup steps
+> Catatan: gunakan **pnpm** (`node-linker=hoisted` via `.npmrc`). `npm install` diketahui crash di mesin ini.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+pnpm install
+pnpm start              # Metro bundler
+pnpm android            # jalankan di device/emulator Android
+```
 
-## Learn more
+## Build & Rilis ke Play Store
 
-To learn more about developing your project with Expo, look at the following resources:
+1. Login EAS: `npx eas login`
+2. Build AAB produksi: `npx eas build --platform android --profile production`
+3. Submit ke Play Console: `npx eas submit --platform android` (butuh `GOOGLE_SERVICE_ACCOUNT` / upload manual)
+4. Isi listing di Play Console (deskripsi, screenshot, rating kuesioner IARC — kategori religi)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Sebelum rilis pertama, pertimbangkan:
+- Ganti `extra.apiKey` di `app.json` dengan API key milik Anda sendiri
+- Set `android.package` (`com.muslimhub.app`) ke package name unik milik Anda
+- Isi `privacyPolicyUrl` di Play Console (app meminta izin lokasi & penyimpanan)
 
-## Join the community
+## Konvensi
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- TypeScript strict, tanpa komentar kode
+- Teks Arab selalu melalui `ArabicText` (font Amiri, RTL)
+- Semua tombol melalui `PressableScale` (animasi scale + haptic)
+- Query React Query dengan `staleTime` 24 jam — jangan polling (API berlimit)

@@ -38,9 +38,11 @@ export function PressableScale({
     <Animated.View style={animatedStyle}>
       <Pressable
         onPressIn={() => {
+          // eslint-disable-next-line react-hooks/immutability
           scale.value = withTiming(scaleTo, { duration: 110 });
         }}
         onPressOut={() => {
+          // eslint-disable-next-line react-hooks/immutability
           scale.value = withTiming(1, { duration: 160 });
         }}
         onPress={handlePress}

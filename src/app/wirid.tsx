@@ -1,12 +1,304 @@
-import { LoadingView } from '@/components/ui/loading';
+import * as Haptics from 'expo-haptics';
+import { useQuery } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  FadeInDown,
+  ZoomIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { ArabicText } from '@/components/ui/arabic-text';
+import { ErrorState } from '@/components/ui/error-state';
 import { PageHeader } from '@/components/ui/page-header';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
+import { SkeletonList } from '@/components/ui/skeleton';
+import { getWirid } from '@/lib/api';
+import { WiridItem } from '@/lib/types';
+import { colors, font, radius, spacing, typography } from '@/theme';
 
-export default function PlaceholderScreen() {
+export default function WiridScreen() {
+  const { data, isPending, isError, error, refetch } = useQuery({
+    queryKey: ['wirid'],
+    queryFn: getWirid,
+  });
+
+  const items = data ?? [];
+
   return (
     <Screen scroll>
-      <PageHeader title="Wirid" subtitle="Sedang disiapkan..." />
-      <LoadingView label="Fitur ini sedang dibangun" />
+      <PageHeader title="Wirid & Tasbih" subtitle="Ketuk wirid untuk mulai menghitung" />
+
+      {isPending ? (
+        <SkeletonList count={5} height={110} />
+      ) : isError ? (
+        <ErrorState message={error?.message} onRetry={() => refetch()} />
+      ) : (
+        <View style={styles.list}>
+          {items.map((item, index) => (
+            <WiridCard key={item.id} item={item} delay={index * 80} />
+          ))}
+        </View>
+      )}
     </Screen>
   );
 }
+
+function WiridCard({ item, delay }: { item: WiridItem; delay: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const [count, setCount] = useState(0);
+  const done = count >= item.times;
+
+  const pulse = useSharedValue(1);
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.value = withTiming(item.times > 0 ? count / item.times : 0, { duration: 200 });
+  }, [count, item.times, progress]);
+
+  useEffect(() => {
+    if (count === 0) return;
+    pulse.value = withSequence(withTiming(1.28, { duration: 90 }), withTiming(1, { duration: 170 }));
+  }, [count, pulse]);
+
+  useEffect(() => {
+    if (!done || !expanded) return;
+    const timer = setTimeout(() => {
+      setExpanded(false);
+      setCount(0);
+    }, 1700);
+    return () => clearTimeout(timer);
+  }, [done, expanded]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulse.value }],
+  }));
+
+  const barStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleX: Math.max(progress.value, 0.02) }],
+  }));
+
+  const increment = () => {
+    if (done) return;
+    const next = count + 1;
+    setCount(next);
+    if (next >= item.times) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+    }
+  };
+
+  const reset = () => setCount(0);
+
+  const toggle = () => setExpanded((value) => !value);
+
+  return (
+    <Animated.View entering={FadeInDown.springify().delay(delay)}>
+      <View style={[styles.card, expanded && styles.cardExpanded]}>
+        <PressableScale onPress={toggle} haptic={false} style={styles.cardPress}>
+          <View style={styles.cardRow}>
+            <View style={styles.timesBadge}>
+              <Text style={styles.timesText}>{item.times}x</Text>
+            </View>
+            <View style={styles.arabicWrap}>
+              <ArabicText size={24}>{item.arabic}</ArabicText>
+              {item.tnc ? (
+                <Text style={styles.tnc} numberOfLines={expanded ? undefined : 2}>
+                  {item.tnc}
+                </Text>
+              ) : null}
+            </View>
+            <Ionicons
+              name={expanded ? 'chevron-up' : 'chevron-down'}
+              size={18}
+              color={colors.textMuted}
+            />
+          </View>
+        </PressableScale>
+
+        {expanded ? (
+          <Animated.View entering={FadeInDown.duration(250)} style={styles.counterArea}>
+            <PressableScale onPress={increment} style={[styles.tapCircle, done && styles.tapCircleDone]} disabled={done}>
+              <Animated.Text style={[styles.countText, done && styles.countTextDone, pulseStyle]}>
+                {count}
+              </Animated.Text>
+              <Text style={[styles.circleCaption, done && styles.circleCaptionDone]}>
+                {done ? 'Selesai' : `dari ${item.times}`}
+              </Text>
+            </PressableScale>
+
+            <View style={styles.barMeta}>
+              <Text style={styles.barLabel}>{done ? 'Wirid selesai, Alhamdulillah' : 'Ketuk lingkaran untuk menghitung'}</Text>
+              <PressableScale onPress={reset} haptic={false} hitSlop={8} style={styles.resetBtn}>
+                <Ionicons name="refresh" size={16} color={colors.textMuted} />
+                <Text style={styles.resetText}>Reset</Text>
+              </PressableScale>
+            </View>
+            <View style={[styles.barTrack, done && styles.barTrackDone]}>
+              <Animated.View style={[styles.barFill, done && styles.barFillDone, barStyle]} />
+            </View>
+            {done ? (
+              <Animated.View entering={ZoomIn.springify()} style={styles.doneChip}>
+                <Ionicons name="checkmark-circle" size={16} color={colors.gold} />
+                <Text style={styles.doneText}>Target tercapai</Text>
+              </Animated.View>
+            ) : null}
+          </Animated.View>
+        ) : null}
+      </View>
+    </Animated.View>
+  );
+}
+
+const styles = StyleSheet.create({
+  list: {
+    gap: spacing.md,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+  },
+  cardExpanded: {
+    borderColor: 'rgba(52, 211, 153, 0.35)',
+  },
+  cardPress: {
+    padding: spacing.base,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  timesBadge: {
+    minWidth: 44,
+    alignItems: 'center',
+    backgroundColor: colors.goldSoft,
+    borderWidth: 1,
+    borderColor: 'rgba(232, 180, 79, 0.4)',
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm - 2,
+  },
+  timesText: {
+    fontFamily: font.bold,
+    fontSize: 13,
+    color: colors.gold,
+  },
+  arabicWrap: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  tnc: {
+    ...typography.caption,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  counterArea: {
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.base,
+    paddingBottom: spacing.base,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  tapCircle: {
+    width: 132,
+    height: 132,
+    borderRadius: 66,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primarySoft,
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  tapCircleDone: {
+    backgroundColor: colors.goldSoft,
+    borderColor: colors.gold,
+  },
+  countText: {
+    fontFamily: font.extrabold,
+    fontSize: 46,
+    color: colors.primary,
+  },
+  countTextDone: {
+    color: colors.gold,
+  },
+  circleCaption: {
+    fontFamily: font.semibold,
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  circleCaptionDone: {
+    color: colors.gold,
+  },
+  barMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    alignSelf: 'stretch',
+  },
+  barLabel: {
+    ...typography.caption,
+    fontSize: 11,
+    flex: 1,
+  },
+  resetBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    marginLeft: spacing.sm,
+  },
+  resetText: {
+    fontFamily: font.semibold,
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  barTrack: {
+    alignSelf: 'stretch',
+    height: 8,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceAlt,
+    overflow: 'hidden',
+  },
+  barTrackDone: {
+    backgroundColor: colors.goldSoft,
+  },
+  barFill: {
+    width: '100%',
+    height: 8,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+    transformOrigin: 'left',
+  },
+  barFillDone: {
+    backgroundColor: colors.gold,
+  },
+  doneChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.goldSoft,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm - 2,
+  },
+  doneText: {
+    fontFamily: font.semibold,
+    fontSize: 12,
+    color: colors.gold,
+  },
+});

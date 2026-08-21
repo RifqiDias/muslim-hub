@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { PressableScale } from './pressable-scale';
-import { colors, spacing, typography } from '@/theme';
+import { colors, spacing } from '@/theme';
 
 interface SectionHeaderProps {
   title: string;

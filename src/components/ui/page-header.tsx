@@ -1,10 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { PressableScale } from './pressable-scale';
 import { colors, spacing, typography } from '@/theme';
-import { Text } from 'react-native';
 
 interface PageHeaderProps {
   title: string;

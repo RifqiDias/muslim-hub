@@ -1,14 +1,339 @@
 import { useLocalSearchParams } from 'expo-router';
-import { LoadingView } from '@/components/ui/loading';
+import { useQuery } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useMemo, useRef, useState } from 'react';
+import {
+  Dimensions,
+  FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import Animated, {
+  FadeInDown,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  type SharedValue,
+} from 'react-native-reanimated';
+import { ArabicText } from '@/components/ui/arabic-text';
+import { ErrorState } from '@/components/ui/error-state';
 import { PageHeader } from '@/components/ui/page-header';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
+import { SkeletonList } from '@/components/ui/skeleton';
+import { getDzikir } from '@/lib/api';
+import { DzikirItem, DzikirKind } from '@/lib/types';
+import { colors, font, gradients, radius, spacing, typography } from '@/theme';
 
-export default function PlaceholderScreen() {
+const TYPE_CONFIG: Record<string, { kind: DzikirKind; title: string; subtitle: string }> = {
+  pagi: { kind: 'dzikir-pagi', title: 'Dzikir Pagi', subtitle: 'Bacaan dzikir waktu pagi' },
+  petang: { kind: 'dzikir-petang', title: 'Dzikir Petang', subtitle: 'Bacaan dzikir waktu petang' },
+  'setelah-shalat': {
+    kind: 'dzikir-setelah-shalat',
+    title: 'Dzikir Setelah Shalat',
+    subtitle: 'Bacaan dzikir setelah shalat fardhu',
+  },
+};
+
+export default function DzikirReaderScreen() {
   const { type } = useLocalSearchParams<{ type: string }>();
+  const config = TYPE_CONFIG[type ?? ''] ?? TYPE_CONFIG.pagi;
+
+  const screenWidth = Dimensions.get('window').width;
+  const trackWidth = screenWidth - 40;
+
+  const listRef = useRef<FlatList<DzikirItem>>(null);
+  const scrollX = useSharedValue(0);
+  const [page, setPage] = useState(0);
+
+  const { data, isPending, isError, error, refetch } = useQuery({
+    queryKey: ['dzikir', type],
+    queryFn: () => getDzikir(config.kind),
+  });
+
+  const items = useMemo(() => data ?? [], [data]);
+  const total = items.length;
+  const maxScroll = Math.max(total - 1, 0) * screenWidth;
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollX.value = event.contentOffset.x;
+    },
+  });
+
+  const fillStyle = useAnimatedStyle(() => ({
+    width:
+      total > 1
+        ? interpolate(scrollX.value, [0, maxScroll], [12, trackWidth], 'clamp')
+        : trackWidth,
+  }));
+
+  const handleMomentumEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const next = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+    setPage(Math.min(Math.max(next, 0), Math.max(total - 1, 0)));
+  };
+
+  const goToPage = (index: number) => {
+    listRef.current?.scrollToIndex({ index, animated: true });
+    setPage(index);
+  };
+
   return (
-    <Screen scroll>
-      <PageHeader title={`Dzikir ${type}`} subtitle="Sedang disiapkan..." />
-      <LoadingView label="Fitur ini sedang dibangun" />
+    <Screen contentStyle={{ paddingHorizontal: 0, paddingTop: 0 }}>
+      <View style={styles.headerWrap}>
+        <PageHeader title={config.title} subtitle={config.subtitle} />
+        {total > 0 ? (
+          <Animated.View entering={FadeInDown.duration(400).delay(80)} style={styles.progressRow}>
+            <View style={[styles.track, { width: trackWidth }]}>
+              <Animated.View style={[styles.fillWrap, fillStyle]}>
+                <LinearGradient
+                  colors={[...gradients.primary]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[styles.fillGradient, { width: trackWidth }]}
+                />
+              </Animated.View>
+            </View>
+            <Text style={styles.progressText}>
+              <Text style={styles.progressCurrent}>{Math.min(page + 1, total)}</Text>
+              {' / '}
+              {total}
+            </Text>
+          </Animated.View>
+        ) : null}
+      </View>
+
+      {isPending ? (
+        <View style={styles.stateWrap}>
+          <SkeletonList count={3} height={150} />
+        </View>
+      ) : isError ? (
+        <View style={styles.stateWrap}>
+          <ErrorState message={error?.message} onRetry={() => refetch()} />
+        </View>
+      ) : (
+        <FlatList
+          ref={listRef}
+          data={items}
+          keyExtractor={(_, index) => `dzikir-${index}`}
+          horizontal
+          pagingEnabled
+          snapToInterval={screenWidth}
+          snapToAlignment="start"
+          decelerationRate="fast"
+          showsHorizontalScrollIndicator={false}
+          onScroll={scrollHandler}
+          onMomentumScrollEnd={handleMomentumEnd}
+          getItemLayout={(_, index) => ({ length: screenWidth, offset: screenWidth * index, index })}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => <DzikirPage item={item} width={screenWidth} />}
+        />
+      )}
+
+      {total > 1 ? (
+        <View style={styles.dotsRow}>
+          {items.map((_, index) => (
+            <DzikirDot
+              key={`dot-${index}`}
+              index={index}
+              pageSize={screenWidth}
+              scrollX={scrollX}
+              onPress={() => goToPage(index)}
+            />
+          ))}
+        </View>
+      ) : null}
     </Screen>
   );
 }
+
+function DzikirPage({ item, width }: { item: DzikirItem; width: number }) {
+  return (
+    <ScrollView
+      style={{ width }}
+      contentContainerStyle={styles.pageContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <Text style={styles.itemTitle}>{item.title}</Text>
+      <ArabicText size={34} style={styles.arabic}>
+        {item.arabic}
+      </ArabicText>
+      {item.latin ? <Text style={styles.latin}>{item.latin}</Text> : null}
+      <Text style={styles.translation}>{item.translation}</Text>
+      {item.notes ? (
+        <View style={styles.noteChip}>
+          <Text style={styles.noteText}>{item.notes}</Text>
+        </View>
+      ) : null}
+      {item.fawaid ? (
+        <View style={styles.fawaidCard}>
+          <Text style={styles.fawaidLabel}>Keutamaan</Text>
+          <Text style={styles.fawaidText}>{item.fawaid}</Text>
+        </View>
+      ) : null}
+      {item.source ? <Text style={styles.source}>{item.source}</Text> : null}
+    </ScrollView>
+  );
+}
+
+function DzikirDot({
+  index,
+  pageSize,
+  scrollX,
+  onPress,
+}: {
+  index: number;
+  pageSize: number;
+  scrollX: SharedValue<number>;
+  onPress: () => void;
+}) {
+  const center = index * pageSize;
+
+  const dotStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollX.value, [center - pageSize, center, center + pageSize], [0.3, 1, 0.3], 'clamp'),
+    transform: [
+      { scaleX: interpolate(scrollX.value, [center - pageSize, center, center + pageSize], [1, 2.4, 1], 'clamp') },
+    ],
+  }));
+
+  return (
+    <PressableScale onPress={onPress} haptic={false} hitSlop={6} style={styles.dotPress}>
+      <Animated.View style={[styles.dot, dotStyle]} />
+    </PressableScale>
+  );
+}
+
+const styles = StyleSheet.create({
+  headerWrap: {
+    paddingHorizontal: spacing.base + 4,
+  },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  track: {
+    height: 8,
+    borderRadius: radius.full,
+    backgroundColor: colors.surfaceAlt,
+    overflow: 'hidden',
+  },
+  fillWrap: {
+    height: 8,
+    borderRadius: radius.full,
+    overflow: 'hidden',
+  },
+  fillGradient: {
+    height: 8,
+  },
+  progressText: {
+    ...typography.caption,
+    fontFamily: font.semibold,
+    color: colors.textMuted,
+    minWidth: 52,
+    textAlign: 'right',
+  },
+  progressCurrent: {
+    fontFamily: font.bold,
+    fontSize: 13,
+    color: colors.primary,
+  },
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    alignItems: 'stretch',
+  },
+  stateWrap: {
+    flex: 1,
+    paddingHorizontal: spacing.base + 4,
+    paddingTop: spacing.sm,
+  },
+  pageContent: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.base + 4,
+    paddingVertical: spacing.md,
+    paddingBottom: spacing.xxl,
+    gap: spacing.md,
+  },
+  itemTitle: {
+    ...typography.h2,
+  },
+  arabic: {
+    marginTop: spacing.sm,
+  },
+  latin: {
+    fontFamily: font.regular,
+    fontStyle: 'italic',
+    fontSize: 14,
+    lineHeight: 22,
+    color: colors.textMuted,
+  },
+  translation: {
+    ...typography.body,
+  },
+  noteChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.goldSoft,
+    borderWidth: 1,
+    borderColor: 'rgba(232, 180, 79, 0.4)',
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm - 2,
+  },
+  noteText: {
+    fontFamily: font.semibold,
+    fontSize: 12,
+    color: colors.gold,
+  },
+  fawaidCard: {
+    backgroundColor: colors.primarySoft,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.3)',
+    borderRadius: radius.lg,
+    padding: spacing.base,
+    gap: spacing.xs,
+  },
+  fawaidLabel: {
+    fontFamily: font.bold,
+    fontSize: 12,
+    color: colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  fawaidText: {
+    ...typography.body,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  source: {
+    ...typography.caption,
+    color: colors.textFaint,
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+  },
+  dotPress: {
+    padding: 3,
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+  },
+});
