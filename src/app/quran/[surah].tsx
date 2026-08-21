@@ -126,7 +126,7 @@ export default function SurahDetailScreen() {
   const meaning = data.name_translations[lang] ?? data.name_translations.id;
 
   return (
-    <Screen>
+    <Screen contentStyle={styles.screenContent}>
       <FlatList
         style={styles.list}
         data={data.verses}
@@ -360,8 +360,12 @@ const makeStyles = (c: ThemeColors) =>
       borderWidth: 1,
       borderColor: c.border,
     },
+    screenContent: {
+      flex: 1,
+      paddingHorizontal: 4,
+    },
     listContent: {
-      paddingHorizontal: spacing.base,
+      paddingHorizontal: 0,
       paddingBottom: spacing.xxl,
       gap: spacing.md,
     },
