@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
@@ -20,7 +20,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
-import { colors, font, gradients, radius, spacing } from '@/theme';
+import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
 import { getSurahDetail } from '@/lib/api';
 import { setJSON, StorageKeys } from '@/lib/storage';
 import type { Verse } from '@/lib/types';
@@ -29,6 +29,8 @@ export default function SurahDetailScreen() {
   const { surah } = useLocalSearchParams<{ surah: string }>();
   const surahParam = surah ?? '1';
   const [tafsirOpen, setTafsirOpen] = useState(false);
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['surah', surahParam],
     queryFn: () => getSurahDetail(surahParam),
@@ -108,7 +110,9 @@ export default function SurahDetailScreen() {
                 <ArabicText size={24} center>
                   {data.preBismillah.text.arab}
                 </ArabicText>
-                <Text style={styles.bismillahTranslation}>{data.preBismillah.text.translation.id}</Text>
+                {data.preBismillah.translation?.id ? (
+                  <Text style={styles.bismillahTranslation}>{data.preBismillah.translation.id}</Text>
+                ) : null}
               </Animated.View>
             ) : null}
             <PressableScale onPress={() => setTafsirOpen((value) => !value)} style={styles.tafsirToggle}>
@@ -132,6 +136,7 @@ export default function SurahDetailScreen() {
 }
 
 function Chevron({ open }: { open: boolean }) {
+  const { colors } = useTheme();
   const rotation = useSharedValue(0);
 
   useEffect(() => {
@@ -151,6 +156,8 @@ function Chevron({ open }: { open: boolean }) {
 
 function VerseCard({ verse, index, surahName }: { verse: Verse; index: number; surahName: string }) {
   const [copied, setCopied] = useState(false);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const translation = verse.translation?.id ?? '';
   const payload = `${verse.text.arab}\n\n${translation}\n\n(${surahName}: ${verse.number.inSurah})`;
 
@@ -191,144 +198,145 @@ function VerseCard({ verse, index, surahName }: { verse: Verse; index: number; s
   );
 }
 
-const styles = StyleSheet.create({
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    gap: spacing.md,
-    paddingBottom: spacing.xxl,
-  },
-  spacer: {
-    height: spacing.md,
-  },
-  hero: {
-    borderRadius: radius.xl,
-    padding: spacing.xl,
-    alignItems: 'center',
-  },
-  heroTransliteration: {
-    fontFamily: font.bold,
-    fontSize: 20,
-    color: colors.white,
-    marginTop: spacing.md,
-  },
-  heroMeaning: {
-    fontFamily: font.regular,
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.72)',
-    marginTop: 2,
-  },
-  heroChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-  },
-  heroChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    borderRadius: radius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  heroChipText: {
-    fontFamily: font.semibold,
-    fontSize: 11,
-    color: colors.text,
-  },
-  bismillahCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.base,
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  bismillahTranslation: {
-    fontFamily: font.regular,
-    fontSize: 12,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  tafsirToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.md + 2,
-  },
-  tafsirToggleText: {
-    flex: 1,
-    fontFamily: font.semibold,
-    fontSize: 14,
-    color: colors.text,
-  },
-  tafsirCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.base,
-  },
-  tafsirText: {
-    fontFamily: font.regular,
-    fontSize: 13.5,
-    lineHeight: 22,
-    color: colors.text,
-  },
-  verseCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  verseHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  verseBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: colors.gold,
-    backgroundColor: colors.goldSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  verseBadgeText: {
-    fontFamily: font.bold,
-    fontSize: 13,
-    color: colors.gold,
-  },
-  verseActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  actionBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.surfaceAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  verseTranslation: {
-    fontFamily: font.regular,
-    fontSize: 14,
-    lineHeight: 22,
-    color: colors.text,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    list: {
+      flex: 1,
+    },
+    listContent: {
+      gap: spacing.md,
+      paddingBottom: spacing.xxl,
+    },
+    spacer: {
+      height: spacing.md,
+    },
+    hero: {
+      borderRadius: radius.xl,
+      padding: spacing.xl,
+      alignItems: 'center',
+    },
+    heroTransliteration: {
+      fontFamily: font.bold,
+      fontSize: 20,
+      color: c.text,
+      marginTop: spacing.md,
+    },
+    heroMeaning: {
+      fontFamily: font.regular,
+      fontSize: 13,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    heroChips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      marginTop: spacing.lg,
+    },
+    heroChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: c.primarySoft,
+      borderRadius: radius.full,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    heroChipText: {
+      fontFamily: font.semibold,
+      fontSize: 11,
+      color: c.text,
+    },
+    bismillahCard: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      padding: spacing.base,
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    bismillahTranslation: {
+      fontFamily: font.regular,
+      fontSize: 12,
+      color: c.textMuted,
+      textAlign: 'center',
+    },
+    tafsirToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.base,
+      paddingVertical: spacing.md + 2,
+    },
+    tafsirToggleText: {
+      flex: 1,
+      fontFamily: font.semibold,
+      fontSize: 14,
+      color: c.text,
+    },
+    tafsirCard: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      padding: spacing.base,
+    },
+    tafsirText: {
+      fontFamily: font.regular,
+      fontSize: 13.5,
+      lineHeight: 22,
+      color: c.text,
+    },
+    verseCard: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    verseHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    verseBadge: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      borderWidth: 1.5,
+      borderColor: c.gold,
+      backgroundColor: c.goldSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    verseBadgeText: {
+      fontFamily: font.bold,
+      fontSize: 13,
+      color: c.gold,
+    },
+    verseActions: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    actionBtn: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: c.surfaceAlt,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    verseTranslation: {
+      fontFamily: font.regular,
+      fontSize: 14,
+      lineHeight: 22,
+      color: c.text,
+    },
+  });

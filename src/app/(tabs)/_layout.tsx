@@ -1,8 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { colors } from '@/theme';
+import { useMemo } from 'react';
+import { StyleSheet } from 'react-native';
+import { useTheme } from '@/theme';
 
 export default function TabsLayout() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => StyleSheet.create(stylesFactory(colors)), [colors]);
+
   return (
     <Tabs
       screenOptions={{
@@ -10,14 +15,7 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: colors.bg },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textFaint,
-        tabBarStyle: {
-          backgroundColor: '#0C1B15',
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-          height: 64,
-          paddingTop: 6,
-          paddingBottom: 10,
-        },
+        tabBarStyle: styles.bar,
         tabBarLabelStyle: {
           fontFamily: 'Inter_600SemiBold',
           fontSize: 10.5,
@@ -72,3 +70,16 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const stylesFactory = (c: { bg: string; surface: string; border: string }) => ({
+  bar: {
+    backgroundColor: c.surface,
+    borderTopColor: c.border,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    height: 64,
+    paddingTop: 6,
+    paddingBottom: 10,
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+});

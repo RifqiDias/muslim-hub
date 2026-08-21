@@ -11,7 +11,7 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SearchBar } from '@/components/ui/search-bar';
 import { SkeletonList } from '@/components/ui/skeleton';
-import { colors, font, radius, spacing } from '@/theme';
+import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
 import { getSurahList } from '@/lib/api';
 import { getJSON, StorageKeys } from '@/lib/storage';
 import type { SurahSummary } from '@/lib/types';
@@ -25,6 +25,8 @@ interface LastReadSurah {
 export default function QuranScreen() {
   const [search, setSearch] = useState('');
   const [lastRead, setLastRead] = useState<LastReadSurah | null>(null);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['surah-list'],
     queryFn: getSurahList,
@@ -94,6 +96,8 @@ export default function QuranScreen() {
 }
 
 function SurahCard({ item, index, onPress }: { item: SurahSummary; index: number; onPress: () => void }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <Animated.View entering={FadeInDown.springify().delay(Math.min(index, 12) * 40)}>
       <PressableScale onPress={onPress} style={styles.card}>
@@ -124,99 +128,100 @@ function SurahCard({ item, index, onPress }: { item: SurahSummary; index: number
   );
 }
 
-const styles = StyleSheet.create({
-  spacer: {
-    height: spacing.md,
-  },
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    gap: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  lastReadChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.goldSoft,
-    borderWidth: 1,
-    borderColor: 'rgba(232, 180, 79, 0.35)',
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm + 2,
-    marginTop: spacing.md,
-  },
-  lastReadText: {
-    flex: 1,
-    fontFamily: font.semibold,
-    fontSize: 13,
-    color: colors.text,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.base,
-  },
-  numberBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  numberText: {
-    fontFamily: font.bold,
-    fontSize: 14,
-    color: colors.bg,
-  },
-  info: {
-    flex: 1,
-    gap: 2,
-  },
-  nameText: {
-    fontFamily: font.bold,
-    fontSize: 15,
-    color: colors.text,
-  },
-  meaningText: {
-    fontFamily: font.regular,
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 4,
-  },
-  miniChip: {
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.full,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  miniChipText: {
-    fontFamily: font.semibold,
-    fontSize: 11,
-    color: colors.textMuted,
-  },
-  empty: {
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.xxxl,
-  },
-  emptyText: {
-    fontFamily: font.regular,
-    fontSize: 13,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    spacer: {
+      height: spacing.md,
+    },
+    list: {
+      flex: 1,
+    },
+    listContent: {
+      gap: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    lastReadChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: c.goldSoft,
+      borderWidth: 1,
+      borderColor: c.gold,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm + 2,
+      marginTop: spacing.md,
+    },
+    lastReadText: {
+      flex: 1,
+      fontFamily: font.semibold,
+      fontSize: 13,
+      color: c.text,
+    },
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      padding: spacing.base,
+    },
+    numberBadge: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: c.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    numberText: {
+      fontFamily: font.bold,
+      fontSize: 14,
+      color: c.bg,
+    },
+    info: {
+      flex: 1,
+      gap: 2,
+    },
+    nameText: {
+      fontFamily: font.bold,
+      fontSize: 15,
+      color: c.text,
+    },
+    meaningText: {
+      fontFamily: font.regular,
+      fontSize: 12,
+      color: c.textMuted,
+    },
+    chipRow: {
+      flexDirection: 'row',
+      gap: 6,
+      marginTop: 4,
+    },
+    miniChip: {
+      backgroundColor: c.surfaceAlt,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.full,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+    },
+    miniChipText: {
+      fontFamily: font.semibold,
+      fontSize: 11,
+      color: c.textMuted,
+    },
+    empty: {
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.xxxl,
+    },
+    emptyText: {
+      fontFamily: font.regular,
+      fontSize: 13,
+      color: c.textMuted,
+      textAlign: 'center',
+    },
+  });

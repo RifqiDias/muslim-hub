@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import type { Href } from 'expo-router';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { FeatureCard, FeatureGradient } from '@/components/ui/feature-card';
 import { PageHeader } from '@/components/ui/page-header';
 import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
-import { colors, font, spacing } from '@/theme';
+import { font, spacing, useTheme, type ThemeColors } from '@/theme';
 
 interface MenuEntry {
   title: string;
@@ -25,8 +26,8 @@ const GROUPS: MenuGroup[] = [
   {
     title: 'Ibadah',
     items: [
-      { title: "Al Qur'an", subtitle: '114 surah dengan terjemahan', icon: 'book', gradient: 'emerald', href: '/(tabs)/quran' },
-      { title: 'Jadwal Shalat', subtitle: 'Waktu shalat harian', icon: 'time', gradient: 'teal', href: '/(tabs)/jadwal' },
+      { title: "Al Qur'an", subtitle: '114 surah dengan terjemahan', icon: 'book', gradient: 'emerald', href: '/quran' },
+      { title: 'Jadwal Shalat', subtitle: 'Waktu shalat harian', icon: 'time', gradient: 'teal', href: '/jadwal' },
       { title: 'Niat Shalat', subtitle: 'Niat seluruh shalat fardhu', icon: 'hand-right', gradient: 'gold', href: '/niat-shalat' },
       { title: 'Bacaan Shalat', subtitle: 'Bacaan lengkap dalam shalat', icon: 'bookmarks', gradient: 'night', href: '/bacaan-shalat' },
       { title: 'Ayat Kursi', subtitle: 'Ayat paling agung dalam Al Qur\'an', icon: 'star', gradient: 'plum', href: '/ayat-kursi' },
@@ -35,7 +36,7 @@ const GROUPS: MenuGroup[] = [
   {
     title: 'Dzikir & Doa',
     items: [
-      { title: 'Dzikir Harian', subtitle: 'Pagi, petang & setelah shalat', icon: 'moon', gradient: 'night', href: '/(tabs)/dzikir' },
+      { title: 'Dzikir Harian', subtitle: 'Pagi, petang & setelah shalat', icon: 'moon', gradient: 'night', href: '/dzikir' },
       { title: 'Wirid', subtitle: 'Amalan wirid harian', icon: 'repeat', gradient: 'teal', href: '/wirid' },
       { title: 'Tahlil', subtitle: 'Bacaan tahlil lengkap', icon: 'heart', gradient: 'plum', href: '/tahlil' },
       { title: 'Doa Harian', subtitle: 'Doa aktivitas sehari-hari', icon: 'sunny', gradient: 'gold', href: '/doa-harian' },
@@ -61,6 +62,9 @@ const GROUPS: MenuGroup[] = [
 ];
 
 export default function LainnyaScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   return (
     <Screen scroll>
       <PageHeader back={false} title="Lainnya" subtitle="Semua fitur Muslim Hub" />
@@ -89,17 +93,18 @@ export default function LainnyaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  groupList: {
-    gap: spacing.md,
-  },
-  footer: {
-    alignItems: 'center',
-    marginTop: spacing.xxl,
-  },
-  footerText: {
-    fontFamily: font.regular,
-    fontSize: 11.5,
-    color: colors.textFaint,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    groupList: {
+      gap: spacing.md,
+    },
+    footer: {
+      alignItems: 'center',
+      marginTop: spacing.xxl,
+    },
+    footerText: {
+      fontFamily: font.regular,
+      fontSize: 11.5,
+      color: c.textFaint,
+    },
+  });

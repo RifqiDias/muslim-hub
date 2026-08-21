@@ -24,14 +24,14 @@ import { SkeletonList } from '@/components/ui/skeleton';
 import { getAsmaulHusna } from '@/lib/api';
 import { getJSON, setJSON, StorageKeys } from '@/lib/storage';
 import { AsmaulHusnaItem } from '@/lib/types';
-import { colors, font, gradients, radius, shadow, spacing, typography } from '@/theme';
+import { font, radius, shadow, spacing, ThemeColors, ThemeGradients, useTheme } from '@/theme';
 
-const CARD_GRADIENTS: readonly (readonly [string, string])[] = [
-  gradients.emerald,
-  gradients.teal,
-  gradients.gold,
-  gradients.night,
-  gradients.plum,
+const makeCardGradients = (g: ThemeGradients): readonly (readonly [string, string])[] => [
+  g.emerald,
+  g.teal,
+  g.gold,
+  g.night,
+  g.plum,
 ];
 
 export default function AsmaulHusnaScreen() {
@@ -39,6 +39,9 @@ export default function AsmaulHusnaScreen() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [selected, setSelected] = useState<AsmaulHusnaItem | null>(null);
   const insets = useSafeAreaInsets();
+  const { colors, gradients, scheme, typography } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const cardGradients = makeCardGradients(gradients);
 
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['asmaul-husna'],
@@ -96,7 +99,7 @@ export default function AsmaulHusnaScreen() {
   }, [selected]);
 
   const renderItem = ({ item, index }: { item: AsmaulHusnaItem; index: number }) => {
-    const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
+    const gradient = cardGradients[index % cardGradients.length];
     const favorited = favorites.includes(item.index);
     return (
       <Animated.View
@@ -149,8 +152,8 @@ export default function AsmaulHusnaScreen() {
         ) : filtered.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="search-outline" size={44} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>Tidak ditemukan</Text>
-            <Text style={styles.emptyMessage}>
+            <Text style={typography.h2}>Tidak ditemukan</Text>
+            <Text style={[typography.caption, styles.emptyMessage]}>
               Tidak ada nama yang cocok dengan &quot;{query.trim()}&quot;.
             </Text>
           </View>
@@ -183,7 +186,15 @@ export default function AsmaulHusnaScreen() {
             style={StyleSheet.absoluteFill}
             collapsable={false}
           >
-            <View style={styles.backdrop} />
+            <View
+              style={[
+                styles.backdrop,
+                {
+                  backgroundColor:
+                    scheme === 'dark' ? 'rgba(4, 12, 9, 0.78)' : 'rgba(24, 39, 32, 0.45)',
+                },
+              ]}
+            />
           </Animated.View>
           <Pressable onPress={() => setSelected(null)} style={StyleSheet.absoluteFill} />
           {selected ? (
@@ -204,9 +215,13 @@ export default function AsmaulHusnaScreen() {
               <ArabicText size={56} center bold color={colors.gold} style={styles.sheetArabic}>
                 {selected.arabic}
               </ArabicText>
-              <Text style={styles.sheetLatin}>{selected.latin}</Text>
-              <Text style={styles.sheetTranslationId}>{selected.translation_id}</Text>
-              <Text style={styles.sheetTranslationEn}>{selected.translation_en}</Text>
+              <Text style={[typography.h1, styles.sheetLatin]}>{selected.latin}</Text>
+              <Text style={[typography.body, styles.sheetTranslationId]}>
+                {selected.translation_id}
+              </Text>
+              <Text style={[typography.caption, styles.sheetTranslationEn]}>
+                {selected.translation_en}
+              </Text>
               <View style={styles.sheetActions}>
                 <PressableScale onPress={handleShare} style={styles.actionButton}>
                   <Ionicons name="share-social-outline" size={18} color={colors.primary} />
@@ -235,170 +250,163 @@ export default function AsmaulHusnaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screenContent: {
-    paddingBottom: 0,
-  },
-  listArea: {
-    flex: 1,
-    marginTop: spacing.md,
-  },
-  listContent: {
-    gap: spacing.md,
-    paddingBottom: spacing.xxxl,
-  },
-  cardWrap: {
-    flex: 1,
-  },
-  card: {
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    ...shadow.card,
-  },
-  cardGradient: {
-    minHeight: 172,
-    padding: spacing.base,
-    borderRadius: radius.lg,
-    justifyContent: 'space-between',
-  },
-  cardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  badge: {
-    minWidth: 28,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-  },
-  badgeText: {
-    fontFamily: font.bold,
-    fontSize: 11,
-    color: colors.primary,
-  },
-  cardArabic: {
-    marginBottom: spacing.sm,
-  },
-  cardLatin: {
-    fontFamily: font.semibold,
-    fontSize: 14,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  cardTranslation: {
-    fontFamily: font.regular,
-    fontSize: 12,
-    lineHeight: 16,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  empty: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.xxxl,
-  },
-  emptyTitle: {
-    ...typography.h2,
-  },
-  emptyMessage: {
-    ...typography.caption,
-    textAlign: 'center',
-    maxWidth: 260,
-  },
-  modalRoot: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(4, 12, 9, 0.78)',
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  handle: {
-    alignSelf: 'center',
-    width: 44,
-    height: 5,
-    borderRadius: radius.full,
-    backgroundColor: colors.borderStrong,
-    marginBottom: spacing.md,
-  },
-  sheetTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  sheetArabic: {
-    marginBottom: spacing.md,
-  },
-  sheetLatin: {
-    ...typography.h1,
-    textAlign: 'center',
-  },
-  sheetTranslationId: {
-    ...typography.body,
-    color: colors.primary,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-  },
-  sheetTranslationEn: {
-    ...typography.caption,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-    fontStyle: 'italic',
-  },
-  sheetActions: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.xxl,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.base,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  actionButtonActive: {
-    backgroundColor: colors.gold,
-    borderColor: colors.gold,
-  },
-  actionText: {
-    fontFamily: font.semibold,
-    fontSize: 14,
-    color: colors.text,
-  },
-  actionTextActive: {
-    color: colors.bg,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    screenContent: {
+      paddingBottom: 0,
+    },
+    listArea: {
+      flex: 1,
+      marginTop: spacing.md,
+    },
+    listContent: {
+      gap: spacing.md,
+      paddingBottom: spacing.xxxl,
+    },
+    cardWrap: {
+      flex: 1,
+    },
+    card: {
+      borderRadius: radius.lg,
+      overflow: 'hidden',
+      ...shadow.card,
+    },
+    cardGradient: {
+      minHeight: 172,
+      padding: spacing.base,
+      borderRadius: radius.lg,
+      justifyContent: 'space-between',
+    },
+    cardTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    badge: {
+      minWidth: 28,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      borderRadius: radius.full,
+      backgroundColor: c.primarySoft,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: 'center',
+    },
+    badgeText: {
+      fontFamily: font.bold,
+      fontSize: 11,
+      color: c.primary,
+    },
+    cardArabic: {
+      marginBottom: spacing.sm,
+    },
+    cardLatin: {
+      fontFamily: font.semibold,
+      fontSize: 14,
+      color: c.text,
+      textAlign: 'center',
+    },
+    cardTranslation: {
+      fontFamily: font.regular,
+      fontSize: 12,
+      lineHeight: 16,
+      color: c.textMuted,
+      textAlign: 'center',
+      marginTop: 2,
+    },
+    empty: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.xxxl,
+    },
+    emptyMessage: {
+      textAlign: 'center',
+      maxWidth: 260,
+    },
+    modalRoot: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    backdrop: {
+      flex: 1,
+    },
+    sheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.sm,
+      borderWidth: 1,
+      borderColor: c.borderStrong,
+    },
+    handle: {
+      alignSelf: 'center',
+      width: 44,
+      height: 5,
+      borderRadius: radius.full,
+      backgroundColor: c.borderStrong,
+      marginBottom: spacing.md,
+    },
+    sheetTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.md,
+    },
+    closeButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.surfaceAlt,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    sheetArabic: {
+      marginBottom: spacing.md,
+    },
+    sheetLatin: {
+      textAlign: 'center',
+    },
+    sheetTranslationId: {
+      color: c.primary,
+      textAlign: 'center',
+      marginTop: spacing.sm,
+    },
+    sheetTranslationEn: {
+      textAlign: 'center',
+      marginTop: spacing.xs,
+      fontStyle: 'italic',
+    },
+    sheetActions: {
+      flexDirection: 'row',
+      gap: spacing.md,
+      marginTop: spacing.xxl,
+    },
+    actionButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.base,
+      borderRadius: radius.full,
+      backgroundColor: c.surfaceAlt,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    actionButtonActive: {
+      backgroundColor: c.gold,
+      borderColor: c.gold,
+    },
+    actionText: {
+      fontFamily: font.semibold,
+      fontSize: 14,
+      color: c.text,
+    },
+    actionTextActive: {
+      color: c.bg,
+    },
+  });

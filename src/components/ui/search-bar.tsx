@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { PressableScale } from './pressable-scale';
-import { colors, font, radius, spacing } from '@/theme';
+import { ThemeColors, font, radius, spacing, useTheme } from '@/theme';
 
 interface SearchBarProps {
   value: string;
@@ -12,8 +12,35 @@ interface SearchBarProps {
   delay?: number;
 }
 
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.lg,
+      height: 48,
+    },
+    focused: {
+      borderColor: c.primary,
+    },
+    input: {
+      flex: 1,
+      fontFamily: font.regular,
+      fontSize: 14,
+      color: c.text,
+      paddingVertical: 0,
+    },
+  });
+
 export function SearchBar({ value, onChangeText, placeholder = 'Cari...', delay = 0 }: SearchBarProps) {
+  const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
+  const styles = makeStyles(colors);
 
   return (
     <Animated.View entering={FadeInDown.duration(400).delay(delay)}>
@@ -38,27 +65,3 @@ export function SearchBar({ value, onChangeText, placeholder = 'Cari...', delay 
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.lg,
-    height: 48,
-  },
-  focused: {
-    borderColor: colors.primary,
-  },
-  input: {
-    flex: 1,
-    fontFamily: font.regular,
-    fontSize: 14,
-    color: colors.text,
-    paddingVertical: 0,
-  },
-});

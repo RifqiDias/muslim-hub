@@ -3,16 +3,17 @@ import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ErrorState } from '@/components/ui/error-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
+import { SearchBar } from '@/components/ui/search-bar';
 import { SkeletonList } from '@/components/ui/skeleton';
 import { getPrayerTimes } from '@/lib/api';
 import { getString, removeItem, setString, StorageKeys } from '@/lib/storage';
 import type { PrayerTimesData } from '@/lib/types';
-import { colors, font, gradients, radius, shadow, spacing } from '@/theme';
+import { font, radius, shadow, spacing, ThemeColors, useTheme } from '@/theme';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 type ScheduleKey = 'Fajr' | 'Sunrise' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha';
@@ -58,7 +59,7 @@ const NEXT_SEQUENCE: { key: ScheduleKey; label: string }[] = [
   { key: 'Isha', label: 'Isya' },
 ];
 
-const GRID_ITEMS: { key: keyof PrayerTimesData['timings']; label: string; icon: IoniconName }[] = [
+const TIME_ITEMS: { key: keyof PrayerTimesData['timings']; label: string; icon: IoniconName }[] = [
   { key: 'Imsak', label: 'Imsak', icon: 'moon-outline' },
   { key: 'Fajr', label: 'Subuh', icon: 'moon' },
   { key: 'Sunrise', label: 'Terbit', icon: 'partly-sunny-outline' },
@@ -66,8 +67,16 @@ const GRID_ITEMS: { key: keyof PrayerTimesData['timings']; label: string; icon: 
   { key: 'Asr', label: 'Ashar', icon: 'partly-sunny' },
   { key: 'Maghrib', label: 'Maghrib', icon: 'moon' },
   { key: 'Isha', label: 'Isya', icon: 'cloudy-night-outline' },
-  { key: 'Midnight', label: 'Tengah Malam', icon: 'time-outline' },
 ];
+
+const HERO_ORNAMENT: Record<ScheduleKey, IoniconName> = {
+  Fajr: 'moon',
+  Sunrise: 'sunny',
+  Dhuhr: 'sunny',
+  Asr: 'partly-sunny',
+  Maghrib: 'moon',
+  Isha: 'cloudy-night',
+};
 
 interface NextSchedule {
   key: ScheduleKey;
@@ -103,6 +112,8 @@ function CountdownClock({
   dayOffset: number;
   onExpire: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [nowSeconds, setNowSeconds] = useState(() => secondsOfDay(new Date()));
 
   useEffect(() => {
@@ -131,25 +142,50 @@ function CountdownClock({
   );
 }
 
-function CountdownCard({ schedule, onExpire }: { schedule: NextSchedule; onExpire: () => void }) {
+function HeroCard({
+  schedule,
+  cityName,
+  onExpire,
+  onOpenCity,
+}: {
+  schedule: NextSchedule;
+  cityName: string;
+  onExpire: () => void;
+  onOpenCity: () => void;
+}) {
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   return (
     <Animated.View entering={FadeInDown.duration(450)}>
       <LinearGradient
-        colors={[...gradients.emerald]}
+        colors={[...gradients.primary]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.hero}
       >
         <View style={styles.heroDeco} pointerEvents="none">
-          <Ionicons name="moon-outline" size={140} color="rgba(232,245,240,0.07)" />
+          <Ionicons name={HERO_ORNAMENT[schedule.key]} size={150} color={colors.white} />
         </View>
-        <View style={styles.heroBadge}>
-          <Ionicons name="time-outline" size={12} color={colors.gold} />
-          <Text style={styles.heroBadgeText}>SELANJUTNYA</Text>
+        <View style={styles.heroTop}>
+          <View style={styles.heroBadge}>
+            <Ionicons name="time-outline" size={12} color={colors.white} />
+            <Text style={styles.heroBadgeText}>WAKTU BERIKUTNYA</Text>
+          </View>
+          <PressableScale onPress={onOpenCity} style={styles.heroCity} scaleTo={0.96}>
+            <Ionicons name="location" size={12} color={colors.primaryDeep} />
+            <Text style={styles.heroCityText} numberOfLines={1}>
+              {cityName}
+            </Text>
+            <Ionicons name="chevron-down" size={12} color={colors.primaryDeep} />
+          </PressableScale>
         </View>
-        <Text style={styles.heroSchedule}>
-          {schedule.label} · {formatTime(schedule.time)}
-        </Text>
+        <View style={styles.heroBody}>
+          <Text style={styles.heroName}>{schedule.label}</Text>
+          <Text style={styles.heroTime} allowFontScaling={false}>
+            {formatTime(schedule.time)}
+          </Text>
+        </View>
         <CountdownClock
           targetMinutes={schedule.targetMinutes}
           dayOffset={schedule.dayOffset}
@@ -161,31 +197,74 @@ function CountdownCard({ schedule, onExpire }: { schedule: NextSchedule; onExpir
   );
 }
 
-function DateCards({ data }: { data: PrayerTimesData }) {
+function Timeline({
+  schedule,
+  timings,
+}: {
+  schedule: NextSchedule;
+  timings: PrayerTimesData['timings'];
+}) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  return (
+    <Animated.View entering={FadeInDown.delay(90).duration(450)} style={styles.timelineWrap}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.timelineContent}
+      >
+        {TIME_ITEMS.map((item) => {
+          const active = schedule.key === item.key;
+          return (
+            <View key={item.key} style={[styles.pill, active && styles.pillActive]}>
+              <Ionicons name={item.icon} size={17} color={active ? colors.primary : colors.gold} />
+              <Text style={[styles.pillLabel, active && styles.pillLabelActive]} numberOfLines={1}>
+                {item.label}
+              </Text>
+              <Text style={styles.pillTime} allowFontScaling={false}>
+                {formatTime(timings[item.key])}
+              </Text>
+            </View>
+          );
+        })}
+      </ScrollView>
+    </Animated.View>
+  );
+}
+
+function DateCard({ data }: { data: PrayerTimesData }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const hijri = data.date?.hijri;
   const hijriText = hijri ? [hijri.day, hijri.month?.en, hijri.year].filter(Boolean).join(' ') : '';
 
   return (
-    <View style={styles.dateRow}>
-      <View style={styles.dateCard}>
-        <Ionicons name="calendar-outline" size={16} color={colors.gold} />
-        <Text style={styles.dateLabel}>Masehi</Text>
+    <Animated.View entering={FadeInDown.delay(150).duration(450)} style={styles.dateCard}>
+      <View style={styles.dateCol}>
+        <View style={styles.dateLabelRow}>
+          <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
+          <Text style={styles.dateLabel}>Masehi</Text>
+        </View>
         <Text style={styles.dateValue} numberOfLines={1}>
           {data.date?.readable ?? '-'}
         </Text>
       </View>
-      <View style={styles.dateCard}>
-        <Ionicons name="moon-outline" size={16} color={colors.primary} />
-        <Text style={styles.dateLabel}>Hijriah</Text>
-        <Text style={styles.dateValue} numberOfLines={1}>
+      <View style={styles.dateDivider} />
+      <View style={[styles.dateCol, styles.dateColRight]}>
+        <View style={styles.dateLabelRow}>
+          <Ionicons name="moon-outline" size={12} color={colors.gold} />
+          <Text style={styles.dateLabelHijri}>Hijriah</Text>
+        </View>
+        <Text style={styles.dateValueHijri} numberOfLines={1}>
           {hijriText ? `${hijriText} H` : '-'}
         </Text>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
-function TimeCard({
+function TimeRow({
   label,
   icon,
   time,
@@ -198,22 +277,30 @@ function TimeCard({
   highlighted: boolean;
   index: number;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   return (
     <Animated.View
-      entering={FadeInDown.delay(140 + index * 60).duration(450)}
-      style={[styles.timeCard, highlighted && styles.timeCardActive]}
+      entering={FadeInDown.delay(200 + index * 50).duration(450)}
+      style={[styles.row, highlighted && styles.rowActive]}
     >
-      <View style={[styles.timeIconWrap, highlighted && styles.timeIconWrapActive]}>
+      <View style={[styles.rowIcon, highlighted && styles.rowIconActive]}>
         <Ionicons name={icon} size={18} color={highlighted ? colors.primary : colors.gold} />
       </View>
-      <View style={styles.timeText}>
-        <Text style={[styles.timeLabel, highlighted && styles.timeLabelActive]} numberOfLines={1}>
+      <View style={styles.rowTitleRow}>
+        <Text style={[styles.rowLabel, highlighted && styles.rowLabelActive]} numberOfLines={1}>
           {label}
         </Text>
-        <Text style={styles.timeValue} allowFontScaling={false}>
-          {formatTime(time)}
-        </Text>
+        {highlighted ? (
+          <View style={styles.rowBadge}>
+            <Text style={styles.rowBadgeText}>BERIKUTNYA</Text>
+          </View>
+        ) : null}
       </View>
+      <Text style={styles.rowTime} allowFontScaling={false}>
+        {formatTime(time)}
+      </Text>
     </Animated.View>
   );
 }
@@ -231,6 +318,9 @@ function CityOption({
   icon?: IoniconName;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   return (
     <PressableScale
       onPress={onPress}
@@ -260,13 +350,40 @@ function CityModal({
   onSelect: (city: string | null) => void;
   onClose: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const [query, setQuery] = useState('');
+
+  const filtered = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return normalized ? CITIES.filter((city) => city.includes(normalized)) : CITIES;
+  }, [query]);
+
+  const handleClose = () => {
+    setQuery('');
+    onClose();
+  };
+
+  const handleSelect = (city: string | null) => {
+    setQuery('');
+    onSelect(city);
+  };
+
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
       <View style={styles.modalBackdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <Animated.View entering={FadeIn.duration(250)} style={styles.modalCard}>
+        <Pressable style={[StyleSheet.absoluteFill, styles.modalScrim]} onPress={handleClose} />
+        <View style={styles.modalCard}>
+          <View style={styles.modalHandle} />
           <Text style={styles.modalTitle}>Pilih Kota</Text>
           <Text style={styles.modalSubtitle}>Jadwal shalat akan mengikuti kota terpilih</Text>
+          <SearchBar value={query} onChangeText={setQuery} placeholder="Cari kota..." />
           <ScrollView
             style={styles.modalList}
             contentContainerStyle={styles.modalListContent}
@@ -277,24 +394,29 @@ function CityModal({
               label="Lokasi otomatis"
               hint="Deteksi via alamat IP"
               active={current === null}
-              onPress={() => onSelect(null)}
+              onPress={() => handleSelect(null)}
             />
-            {CITIES.map((city) => (
+            {filtered.map((city) => (
               <CityOption
                 key={city}
                 label={capitalize(city)}
                 active={current === city}
-                onPress={() => onSelect(city)}
+                onPress={() => handleSelect(city)}
               />
             ))}
+            {filtered.length === 0 ? (
+              <Text style={styles.modalEmpty}>Kota tidak ditemukan</Text>
+            ) : null}
           </ScrollView>
-        </Animated.View>
+        </View>
       </View>
     </Modal>
   );
 }
 
 export default function JadwalShalatScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [city, setCity] = useState<string | null>(null);
   const [cityLoaded, setCityLoaded] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -356,22 +478,21 @@ export default function JadwalShalatScreen() {
   return (
     <Screen scroll refreshing={isRefetching} onRefresh={() => refetch()}>
       <PageHeader back={false} title="Jadwal Shalat" subtitle="Waktu shalat hari ini" />
-      <PressableScale onPress={() => setModalVisible(true)} style={styles.cityBar}>
-        <Ionicons name="location-sharp" size={15} color={colors.gold} />
-        <Text style={styles.cityText} numberOfLines={1}>
-          {city ? capitalize(city) : 'Lokasi Otomatis (IP)'}
-        </Text>
-        <Ionicons name="chevron-down" size={15} color={colors.textMuted} />
-      </PressableScale>
       {isPending ? <SkeletonList count={4} height={120} /> : null}
       {isError ? <ErrorState onRetry={() => refetch()} /> : null}
       {data && schedule ? (
         <>
-          <CountdownCard schedule={schedule} onExpire={handleExpire} />
-          <DateCards data={data} />
-          <View style={styles.grid}>
-            {GRID_ITEMS.map((item, index) => (
-              <TimeCard
+          <HeroCard
+            schedule={schedule}
+            cityName={city ? capitalize(city) : 'Lokasi Otomatis'}
+            onExpire={handleExpire}
+            onOpenCity={() => setModalVisible(true)}
+          />
+          <Timeline schedule={schedule} timings={data.timings} />
+          <DateCard data={data} />
+          <View style={styles.list}>
+            {TIME_ITEMS.map((item, index) => (
+              <TimeRow
                 key={item.key}
                 label={item.label}
                 icon={item.icon}
@@ -393,214 +514,323 @@ export default function JadwalShalatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  cityBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    alignSelf: 'flex-start',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.full,
-    paddingLeft: spacing.md,
-    paddingRight: spacing.md,
-    paddingVertical: 9,
-    marginBottom: spacing.md,
-  },
-  cityText: {
-    fontFamily: font.semibold,
-    fontSize: 13,
-    color: colors.text,
-  },
-  hero: {
-    alignItems: 'center',
-    borderRadius: radius.xl,
-    padding: spacing.xl,
-    overflow: 'hidden',
-    ...shadow.card,
-  },
-  heroDeco: {
-    position: 'absolute',
-    right: -20,
-    top: -16,
-  },
-  heroBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.goldSoft,
-    borderRadius: radius.full,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  heroBadgeText: {
-    fontFamily: font.bold,
-    fontSize: 10,
-    letterSpacing: 1.5,
-    color: colors.gold,
-  },
-  heroSchedule: {
-    fontFamily: font.bold,
-    fontSize: 17,
-    color: colors.text,
-    marginTop: spacing.sm,
-  },
-  heroClock: {
-    fontFamily: font.extrabold,
-    fontSize: 52,
-    lineHeight: 62,
-    color: colors.white,
-    marginTop: spacing.xs,
-    fontVariant: ['tabular-nums'],
-  },
-  heroClockSep: {
-    fontFamily: font.extrabold,
-    color: colors.primary,
-    opacity: 0.85,
-  },
-  heroCaption: {
-    fontFamily: font.regular,
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.md,
-  },
-  dateCard: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    gap: 3,
-  },
-  dateLabel: {
-    fontFamily: font.regular,
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  dateValue: {
-    fontFamily: font.semibold,
-    fontSize: 14,
-    color: colors.text,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-    marginTop: spacing.lg,
-  },
-  timeCard: {
-    width: '48.4%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-  },
-  timeCardActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
-  },
-  timeIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceAlt,
-  },
-  timeIconWrapActive: {
-    backgroundColor: colors.goldSoft,
-  },
-  timeText: {
-    flex: 1,
-  },
-  timeLabel: {
-    fontFamily: font.regular,
-    fontSize: 12,
-    color: colors.textMuted,
-    marginBottom: 2,
-  },
-  timeLabelActive: {
-    color: colors.primary,
-    fontFamily: font.semibold,
-  },
-  timeValue: {
-    fontFamily: font.extrabold,
-    fontSize: 18,
-    color: colors.text,
-    fontVariant: ['tabular-nums'],
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(4,12,9,0.78)',
-    justifyContent: 'flex-end',
-    padding: spacing.base,
-    paddingBottom: spacing.xl,
-  },
-  modalCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: radius.xl,
-    padding: spacing.lg,
-    maxHeight: '82%',
-  },
-  modalTitle: {
-    fontFamily: font.bold,
-    fontSize: 18,
-    color: colors.text,
-  },
-  modalSubtitle: {
-    fontFamily: font.regular,
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-    marginBottom: spacing.md,
-  },
-  modalList: {
-    flexGrow: 0,
-  },
-  modalListContent: {
-    gap: 4,
-    paddingBottom: spacing.sm,
-  },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: 11,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-  },
-  optionActive: {
-    backgroundColor: colors.primarySoft,
-  },
-  optionText: {
-    flex: 1,
-    gap: 1,
-  },
-  optionLabel: {
-    fontFamily: font.semibold,
-    fontSize: 14,
-    color: colors.text,
-  },
-  optionLabelActive: {
-    color: colors.primary,
-  },
-  optionHint: {
-    fontFamily: font.regular,
-    fontSize: 11,
-    color: colors.textMuted,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    hero: {
+      alignItems: 'center',
+      borderRadius: radius.xl,
+      padding: spacing.xl,
+      overflow: 'hidden',
+      ...shadow.card,
+    },
+    heroDeco: {
+      position: 'absolute',
+      right: -24,
+      top: -20,
+      opacity: 0.08,
+    },
+    heroTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      alignSelf: 'stretch',
+      gap: spacing.sm,
+    },
+    heroBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      backgroundColor: c.primarySoft,
+      borderRadius: radius.full,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    heroBadgeText: {
+      fontFamily: font.bold,
+      fontSize: 10,
+      letterSpacing: 1.5,
+      color: c.white,
+    },
+    heroCity: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: c.white,
+      borderRadius: radius.full,
+      paddingLeft: 10,
+      paddingRight: 8,
+      paddingVertical: 5,
+      maxWidth: 160,
+    },
+    heroCityText: {
+      fontFamily: font.semibold,
+      fontSize: 11,
+      color: c.primaryDeep,
+    },
+    heroBody: {
+      alignItems: 'center',
+      gap: 2,
+      marginTop: spacing.lg,
+    },
+    heroName: {
+      fontFamily: font.extrabold,
+      fontSize: 30,
+      lineHeight: 36,
+      color: c.white,
+    },
+    heroTime: {
+      fontFamily: font.semibold,
+      fontSize: 16,
+      letterSpacing: 1,
+      color: c.white,
+      opacity: 0.82,
+      fontVariant: ['tabular-nums'],
+    },
+    heroClock: {
+      fontFamily: font.extrabold,
+      fontSize: 48,
+      lineHeight: 58,
+      color: c.white,
+      marginTop: spacing.sm,
+      fontVariant: ['tabular-nums'],
+    },
+    heroClockSep: {
+      opacity: 0.5,
+    },
+    heroCaption: {
+      fontFamily: font.regular,
+      fontSize: 12,
+      color: c.white,
+      opacity: 0.7,
+      marginTop: 2,
+    },
+    timelineWrap: {
+      marginTop: spacing.md,
+    },
+    timelineContent: {
+      gap: spacing.sm,
+      paddingVertical: 2,
+    },
+    pill: {
+      alignItems: 'center',
+      gap: 4,
+      minWidth: 84,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      borderRadius: radius.lg,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    pillActive: {
+      borderColor: c.primary,
+      backgroundColor: c.primarySoft,
+    },
+    pillLabel: {
+      fontFamily: font.regular,
+      fontSize: 11,
+      color: c.textMuted,
+    },
+    pillLabelActive: {
+      fontFamily: font.semibold,
+      color: c.primary,
+    },
+    pillTime: {
+      fontFamily: font.semibold,
+      fontSize: 14,
+      color: c.text,
+      fontVariant: ['tabular-nums'],
+    },
+    dateCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.lg,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      marginTop: spacing.md,
+    },
+    dateCol: {
+      flex: 1,
+      gap: 3,
+    },
+    dateColRight: {
+      alignItems: 'flex-end',
+    },
+    dateDivider: {
+      width: 1,
+      alignSelf: 'stretch',
+      backgroundColor: c.border,
+    },
+    dateLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    dateLabel: {
+      fontFamily: font.regular,
+      fontSize: 11,
+      color: c.textMuted,
+    },
+    dateLabelHijri: {
+      fontFamily: font.regular,
+      fontSize: 11,
+      color: c.gold,
+    },
+    dateValue: {
+      fontFamily: font.semibold,
+      fontSize: 14,
+      color: c.text,
+    },
+    dateValueHijri: {
+      fontFamily: font.semibold,
+      fontSize: 14,
+      color: c.gold,
+    },
+    list: {
+      gap: spacing.md,
+      marginTop: spacing.md,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.base,
+      paddingVertical: spacing.md,
+    },
+    rowActive: {
+      borderColor: c.primary,
+      backgroundColor: c.primarySoft,
+    },
+    rowIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.surfaceAlt,
+    },
+    rowIconActive: {
+      backgroundColor: c.goldSoft,
+    },
+    rowTitleRow: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    rowLabel: {
+      fontFamily: font.semibold,
+      fontSize: 15,
+      color: c.text,
+      flexShrink: 1,
+    },
+    rowLabelActive: {
+      color: c.primary,
+    },
+    rowBadge: {
+      backgroundColor: c.primary,
+      borderRadius: radius.full,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+    },
+    rowBadgeText: {
+      fontFamily: font.bold,
+      fontSize: 9,
+      letterSpacing: 1,
+      color: c.white,
+    },
+    rowTime: {
+      fontFamily: font.extrabold,
+      fontSize: 20,
+      color: c.text,
+      fontVariant: ['tabular-nums'],
+    },
+    modalBackdrop: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      padding: spacing.base,
+      paddingBottom: spacing.xl,
+    },
+    modalScrim: {
+      backgroundColor: c.black,
+      opacity: 0.55,
+    },
+    modalCard: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.borderStrong,
+      borderRadius: radius.xl,
+      padding: spacing.lg,
+      maxHeight: '82%',
+    },
+    modalHandle: {
+      width: 36,
+      height: 4,
+      borderRadius: radius.full,
+      backgroundColor: c.borderStrong,
+      alignSelf: 'center',
+      marginBottom: spacing.md,
+    },
+    modalTitle: {
+      fontFamily: font.bold,
+      fontSize: 18,
+      color: c.text,
+    },
+    modalSubtitle: {
+      fontFamily: font.regular,
+      fontSize: 12,
+      color: c.textMuted,
+      marginTop: 2,
+      marginBottom: spacing.md,
+    },
+    modalList: {
+      flexGrow: 0,
+      marginTop: spacing.md,
+    },
+    modalListContent: {
+      gap: 4,
+      paddingBottom: spacing.sm,
+    },
+    modalEmpty: {
+      fontFamily: font.regular,
+      fontSize: 13,
+      color: c.textMuted,
+      textAlign: 'center',
+      paddingVertical: spacing.lg,
+    },
+    option: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingVertical: 11,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.md,
+    },
+    optionActive: {
+      backgroundColor: c.primarySoft,
+    },
+    optionText: {
+      flex: 1,
+      gap: 1,
+    },
+    optionLabel: {
+      fontFamily: font.semibold,
+      fontSize: 14,
+      color: c.text,
+    },
+    optionLabelActive: {
+      color: c.primary,
+    },
+    optionHint: {
+      fontFamily: font.regular,
+      fontSize: 11,
+      color: c.textMuted,
+    },
+  });

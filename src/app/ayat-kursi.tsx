@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { shareText } from '@/components/quran-share';
@@ -13,11 +13,13 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
 import { SkeletonList } from '@/components/ui/skeleton';
-import { colors, font, gradients, radius, spacing } from '@/theme';
+import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
 import { getAyatKursi } from '@/lib/api';
 
 export default function AyatKursiScreen() {
   const [copied, setCopied] = useState(false);
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['ayat-kursi'],
     queryFn: getAyatKursi,
@@ -120,102 +122,103 @@ export default function AyatKursiScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  hero: {
-    borderRadius: radius.xl,
-    padding: spacing.xl,
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  heroBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.goldSoft,
-    borderRadius: radius.full,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-  },
-  heroBadgeText: {
-    fontFamily: font.semibold,
-    fontSize: 11,
-    color: colors.gold,
-  },
-  contentCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginTop: spacing.md,
-  },
-  latinText: {
-    fontFamily: font.regular,
-    fontStyle: 'italic',
-    fontSize: 14,
-    lineHeight: 22,
-    color: colors.textMuted,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: spacing.md,
-  },
-  translationText: {
-    fontFamily: font.regular,
-    fontSize: 14,
-    lineHeight: 23,
-    color: colors.text,
-  },
-  tafsirCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  tafsirText: {
-    fontFamily: font.regular,
-    fontSize: 13.5,
-    lineHeight: 22,
-    color: colors.text,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.xl,
-  },
-  primaryBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    paddingVertical: spacing.md + 2,
-  },
-  primaryBtnText: {
-    fontFamily: font.bold,
-    fontSize: 14,
-    color: colors.bg,
-  },
-  secondaryBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: radius.full,
-    paddingVertical: spacing.md + 2,
-  },
-  secondaryBtnText: {
-    fontFamily: font.bold,
-    fontSize: 14,
-    color: colors.primary,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    hero: {
+      borderRadius: radius.xl,
+      padding: spacing.xl,
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    heroBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: c.goldSoft,
+      borderRadius: radius.full,
+      paddingHorizontal: 12,
+      paddingVertical: 5,
+    },
+    heroBadgeText: {
+      fontFamily: font.semibold,
+      fontSize: 11,
+      color: c.gold,
+    },
+    contentCard: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      marginTop: spacing.md,
+    },
+    latinText: {
+      fontFamily: font.regular,
+      fontStyle: 'italic',
+      fontSize: 14,
+      lineHeight: 22,
+      color: c.textMuted,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: c.border,
+      marginVertical: spacing.md,
+    },
+    translationText: {
+      fontFamily: font.regular,
+      fontSize: 14,
+      lineHeight: 23,
+      color: c.text,
+    },
+    tafsirCard: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    tafsirText: {
+      fontFamily: font.regular,
+      fontSize: 13.5,
+      lineHeight: 22,
+      color: c.text,
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: spacing.md,
+      marginTop: spacing.xl,
+    },
+    primaryBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      backgroundColor: c.primary,
+      borderRadius: radius.full,
+      paddingVertical: spacing.md + 2,
+    },
+    primaryBtnText: {
+      fontFamily: font.bold,
+      fontSize: 14,
+      color: c.bg,
+    },
+    secondaryBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.borderStrong,
+      borderRadius: radius.full,
+      paddingVertical: spacing.md + 2,
+    },
+    secondaryBtnText: {
+      fontFamily: font.bold,
+      fontSize: 14,
+      color: c.primary,
+    },
+  });

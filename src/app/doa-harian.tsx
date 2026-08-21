@@ -10,9 +10,12 @@ import { Screen } from '@/components/ui/screen';
 import { SearchBar } from '@/components/ui/search-bar';
 import { SkeletonList } from '@/components/ui/skeleton';
 import { getDoaHarian } from '@/lib/api';
-import { colors, font, radius, spacing, typography } from '@/theme';
+import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
 
 export default function DoaHarianScreen() {
+  const { colors, typography } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const [query, setQuery] = useState('');
 
   const { data, isPending, isError, error, refetch } = useQuery({
@@ -46,8 +49,8 @@ export default function DoaHarianScreen() {
           {items.length === 0 ? (
             <View style={styles.empty}>
               <Ionicons name="search-outline" size={40} color={colors.textFaint} />
-              <Text style={styles.emptyTitle}>Tidak ditemukan</Text>
-              <Text style={styles.emptyMessage}>Coba kata kunci lain, misalnya &quot;makan&quot; atau &quot;tidur&quot;.</Text>
+              <Text style={[typography.h3, styles.emptyTitle]}>Tidak ditemukan</Text>
+              <Text style={[typography.caption, styles.emptyMessage]}>Coba kata kunci lain, misalnya &quot;makan&quot; atau &quot;tidur&quot;.</Text>
             </View>
           ) : (
             <View style={styles.list}>
@@ -57,12 +60,12 @@ export default function DoaHarianScreen() {
                   entering={FadeInDown.springify().delay(Math.min(index, 8) * 60)}
                   style={styles.card}
                 >
-                  <Text style={styles.title}>{item.title}</Text>
+                  <Text style={typography.h3}>{item.title}</Text>
                   <ArabicText size={26} style={styles.arabic}>
                     {item.arabic}
                   </ArabicText>
                   <Text style={styles.latin}>{item.latin}</Text>
-                  <Text style={styles.translation}>{item.translation}</Text>
+                  <Text style={[typography.caption, styles.translation]}>{item.translation}</Text>
                 </Animated.View>
               ))}
             </View>
@@ -73,51 +76,46 @@ export default function DoaHarianScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  body: {
-    gap: spacing.lg,
-  },
-  list: {
-    gap: spacing.md,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.base,
-    gap: spacing.md,
-  },
-  title: {
-    ...typography.h3,
-  },
-  arabic: {
-    marginTop: spacing.xs,
-  },
-  latin: {
-    fontFamily: font.regular,
-    fontStyle: 'italic',
-    fontSize: 13,
-    lineHeight: 20,
-    color: colors.textMuted,
-  },
-  translation: {
-    ...typography.caption,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  empty: {
-    alignItems: 'center',
-    paddingVertical: spacing.xxxl,
-    gap: spacing.sm,
-  },
-  emptyTitle: {
-    ...typography.h3,
-    marginTop: spacing.md,
-  },
-  emptyMessage: {
-    ...typography.caption,
-    textAlign: 'center',
-    maxWidth: 240,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    body: {
+      gap: spacing.lg,
+    },
+    list: {
+      gap: spacing.md,
+    },
+    card: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      padding: spacing.base,
+      gap: spacing.md,
+    },
+    arabic: {
+      marginTop: spacing.xs,
+    },
+    latin: {
+      fontFamily: font.regular,
+      fontStyle: 'italic',
+      fontSize: 13,
+      lineHeight: 20,
+      color: c.textMuted,
+    },
+    translation: {
+      fontSize: 13,
+      lineHeight: 19,
+    },
+    empty: {
+      alignItems: 'center',
+      paddingVertical: spacing.xxxl,
+      gap: spacing.sm,
+    },
+    emptyTitle: {
+      marginTop: spacing.md,
+    },
+    emptyMessage: {
+      textAlign: 'center',
+      maxWidth: 240,
+    },
+  });

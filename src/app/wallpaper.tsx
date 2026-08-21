@@ -1,21 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
+import * as MediaLibrary from 'expo-media-library/legacy';
 import * as Sharing from 'expo-sharing';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeOut, ZoomIn } from 'react-native-reanimated';
 import { ErrorState } from '@/components/ui/error-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
-import { SkeletonBlock } from '@/components/ui/skeleton';
 import { Screen } from '@/components/ui/screen';
+import { SkeletonBlock } from '@/components/ui/skeleton';
 import { getRandomWallpaper } from '@/lib/api';
-import { colors, font, gradients, radius, shadow, spacing } from '@/theme';
+import { ThemeColors, ThemeGradients, font, radius, shadow, spacing, useTheme } from '@/theme';
 import * as FileSystem from 'expo-file-system/legacy';
 
 export default function WallpaperScreen() {
+  const { colors, gradients, scheme } = useTheme();
+  const styles = useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
   const { height } = useWindowDimensions();
   const [seed, setSeed] = useState<number>(() => Date.now());
   const [loaded, setLoaded] = useState(false);
@@ -45,37 +48,46 @@ export default function WallpaperScreen() {
 
   const changeWallpaper = () => setSeed(Date.now());
 
+  const downloadToDevice = async (url: string): Promise<string> => {
+    const cacheDir = FileSystem.cacheDirectory;
+    if (!cacheDir) throw new Error('storage');
+    const fileUri = `${cacheDir}wall-${Date.now()}.jpg`;
+    const task = FileSystem.createDownloadResumable(url, fileUri, {}, (data) => {
+      const expected = data.totalBytesExpectedToWrite;
+      setSavePct(expected > 0 ? Math.floor((data.totalBytesWritten / expected) * 100) : 0);
+    });
+    const result = await task.downloadAsync();
+    if (!result || result.status >= 400) throw new Error('download');
+    return result.uri;
+  };
+
   const saveWallpaper = async () => {
     const url = query.data;
     if (!url || savePct !== null) return;
     setSavePct(0);
     try {
-      const cacheDir = FileSystem.cacheDirectory;
-      if (!cacheDir) throw new Error('storage');
-      const fileUri = `${cacheDir}wall-${Date.now()}.jpg`;
-      const task = FileSystem.createDownloadResumable(url, fileUri, {}, (data) => {
-        const expected = data.totalBytesExpectedToWrite;
-        setSavePct(expected > 0 ? Math.floor((data.totalBytesWritten / expected) * 100) : 0);
-      });
-      const result = await task.downloadAsync();
-      if (!result) throw new Error('download');
+      const localUri = await downloadToDevice(url);
+      const permission = await MediaLibrary.requestPermissionsAsync(true);
+      if (!permission.granted) {
+        showToast('Izin akses galeri ditolak');
+        return;
+      }
+      await MediaLibrary.saveToLibraryAsync(localUri);
+      showToast('Wallpaper tersimpan di galeri');
+    } catch {
       try {
-        const MediaLibrary = await import('expo-media-library');
-        const permission = await MediaLibrary.requestPermissionsAsync(true);
-        if (!permission.granted) {
-          showToast('Izin akses galeri ditolak');
-          return;
-        }
-        await MediaLibrary.Asset.create(result.uri);
-        showToast('Wallpaper tersimpan di galeri');
-      } catch {
-        await Sharing.shareAsync(result.uri, {
+        const localUri = await FileSystem.downloadAsync(
+          url,
+          `${FileSystem.cacheDirectory ?? ''}wall-fallback-${Date.now()}.jpg`,
+        ).then((r) => r.uri);
+        await Sharing.shareAsync(localUri, {
           mimeType: 'image/jpeg',
           dialogTitle: 'Simpan Wallpaper Islami',
         });
+        showToast('Disimpan melalui menu bagikan');
+      } catch {
+        showToast('Gagal menyimpan wallpaper');
       }
-    } catch {
-      showToast('Gagal menyimpan wallpaper');
     } finally {
       setSavePct(null);
     }
@@ -102,6 +114,7 @@ export default function WallpaperScreen() {
   };
 
   const cardHeight = Math.round(height * 0.62);
+  const primaryTextColor = scheme === 'dark' ? '#061009' : '#FFFFFF';
 
   return (
     <Screen contentStyle={styles.content}>
@@ -156,8 +169,8 @@ export default function WallpaperScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.primaryBtn}
           >
-            <Ionicons name="refresh" size={19} color={colors.bgDeep} />
-            <Text style={styles.primaryText}>Wallpaper Lain</Text>
+            <Ionicons name="refresh" size={19} color={primaryTextColor} />
+            <Text style={[styles.primaryText, { color: primaryTextColor }]}>Wallpaper Lain</Text>
           </LinearGradient>
         </PressableScale>
         <View style={styles.row}>
@@ -179,79 +192,79 @@ export default function WallpaperScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    paddingBottom: spacing.base,
-  },
-  card: {
-    borderRadius: radius.xl,
-    overflow: 'hidden',
-    backgroundColor: colors.surface,
-  },
-  errorWrap: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  shade: {
-    position: 'absolute',
-    top: '55%',
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  actions: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    gap: spacing.md,
-    paddingTop: spacing.lg,
-  },
-  toast: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  toastText: {
-    fontFamily: font.regular,
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  primaryOuter: {
-    borderRadius: radius.full,
-  },
-  primaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    borderRadius: radius.full,
-    paddingVertical: spacing.md + 2,
-  },
-  primaryText: {
-    fontFamily: font.bold,
-    fontSize: 15,
-    color: colors.bgDeep,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  secondaryBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-  },
-  secondaryText: {
-    fontFamily: font.semibold,
-    fontSize: 13,
-    color: colors.text,
-  },
-});
+const makeStyles = (c: ThemeColors, g: ThemeGradients) =>
+  StyleSheet.create({
+    content: {
+      paddingBottom: spacing.base,
+    },
+    card: {
+      borderRadius: radius.xl,
+      overflow: 'hidden',
+      backgroundColor: c.surface,
+    },
+    errorWrap: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    shade: {
+      position: 'absolute',
+      top: '55%',
+      left: 0,
+      right: 0,
+      bottom: 0,
+    },
+    actions: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      gap: spacing.md,
+      paddingTop: spacing.lg,
+    },
+    toast: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+    },
+    toastText: {
+      fontFamily: font.regular,
+      fontSize: 12,
+      color: c.textMuted,
+    },
+    primaryOuter: {
+      borderRadius: radius.full,
+    },
+    primaryBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      borderRadius: radius.full,
+      paddingVertical: spacing.md + 2,
+    },
+    primaryText: {
+      fontFamily: font.bold,
+      fontSize: 15,
+    },
+    row: {
+      flexDirection: 'row',
+      gap: spacing.md,
+    },
+    secondaryBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      backgroundColor: c.surface,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.sm,
+    },
+    secondaryText: {
+      fontFamily: font.semibold,
+      fontSize: 13,
+      color: c.text,
+    },
+  });

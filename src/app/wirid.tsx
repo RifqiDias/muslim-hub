@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeInDown,
@@ -19,9 +19,12 @@ import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
 import { getWirid } from '@/lib/api';
 import { WiridItem } from '@/lib/types';
-import { colors, font, radius, spacing, typography } from '@/theme';
+import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
 
 export default function WiridScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: ['wirid'],
     queryFn: getWirid,
@@ -49,6 +52,9 @@ export default function WiridScreen() {
 }
 
 function WiridCard({ item, delay }: { item: WiridItem; delay: number }) {
+  const { colors, typography } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const [expanded, setExpanded] = useState(false);
   const [count, setCount] = useState(0);
   const done = count >= item.times;
@@ -106,7 +112,7 @@ function WiridCard({ item, delay }: { item: WiridItem; delay: number }) {
             <View style={styles.arabicWrap}>
               <ArabicText size={24}>{item.arabic}</ArabicText>
               {item.tnc ? (
-                <Text style={styles.tnc} numberOfLines={expanded ? undefined : 2}>
+                <Text style={[typography.caption, styles.tnc]} numberOfLines={expanded ? undefined : 2}>
                   {item.tnc}
                 </Text>
               ) : null}
@@ -131,7 +137,7 @@ function WiridCard({ item, delay }: { item: WiridItem; delay: number }) {
             </PressableScale>
 
             <View style={styles.barMeta}>
-              <Text style={styles.barLabel}>{done ? 'Wirid selesai, Alhamdulillah' : 'Ketuk lingkaran untuk menghitung'}</Text>
+              <Text style={[typography.caption, styles.barLabel]}>{done ? 'Wirid selesai, Alhamdulillah' : 'Ketuk lingkaran untuk menghitung'}</Text>
               <PressableScale onPress={reset} haptic={false} hitSlop={8} style={styles.resetBtn}>
                 <Ionicons name="refresh" size={16} color={colors.textMuted} />
                 <Text style={styles.resetText}>Reset</Text>
@@ -153,152 +159,151 @@ function WiridCard({ item, delay }: { item: WiridItem; delay: number }) {
   );
 }
 
-const styles = StyleSheet.create({
-  list: {
-    gap: spacing.md,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-  },
-  cardExpanded: {
-    borderColor: 'rgba(52, 211, 153, 0.35)',
-  },
-  cardPress: {
-    padding: spacing.base,
-  },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  timesBadge: {
-    minWidth: 44,
-    alignItems: 'center',
-    backgroundColor: colors.goldSoft,
-    borderWidth: 1,
-    borderColor: 'rgba(232, 180, 79, 0.4)',
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm - 2,
-  },
-  timesText: {
-    fontFamily: font.bold,
-    fontSize: 13,
-    color: colors.gold,
-  },
-  arabicWrap: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  tnc: {
-    ...typography.caption,
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  counterArea: {
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.base,
-    paddingBottom: spacing.base,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  tapCircle: {
-    width: 132,
-    height: 132,
-    borderRadius: 66,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primarySoft,
-    borderWidth: 2,
-    borderColor: colors.primary,
-  },
-  tapCircleDone: {
-    backgroundColor: colors.goldSoft,
-    borderColor: colors.gold,
-  },
-  countText: {
-    fontFamily: font.extrabold,
-    fontSize: 46,
-    color: colors.primary,
-  },
-  countTextDone: {
-    color: colors.gold,
-  },
-  circleCaption: {
-    fontFamily: font.semibold,
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  circleCaptionDone: {
-    color: colors.gold,
-  },
-  barMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    alignSelf: 'stretch',
-  },
-  barLabel: {
-    ...typography.caption,
-    fontSize: 11,
-    flex: 1,
-  },
-  resetBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 4,
-    marginLeft: spacing.sm,
-  },
-  resetText: {
-    fontFamily: font.semibold,
-    fontSize: 11,
-    color: colors.textMuted,
-  },
-  barTrack: {
-    alignSelf: 'stretch',
-    height: 8,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceAlt,
-    overflow: 'hidden',
-  },
-  barTrackDone: {
-    backgroundColor: colors.goldSoft,
-  },
-  barFill: {
-    width: '100%',
-    height: 8,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-    transformOrigin: 'left',
-  },
-  barFillDone: {
-    backgroundColor: colors.gold,
-  },
-  doneChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.goldSoft,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm - 2,
-  },
-  doneText: {
-    fontFamily: font.semibold,
-    fontSize: 12,
-    color: colors.gold,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    list: {
+      gap: spacing.md,
+    },
+    card: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      overflow: 'hidden',
+    },
+    cardExpanded: {
+      borderColor: c.primary,
+    },
+    cardPress: {
+      padding: spacing.base,
+    },
+    cardRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    timesBadge: {
+      minWidth: 44,
+      alignItems: 'center',
+      backgroundColor: c.goldSoft,
+      borderWidth: 1,
+      borderColor: c.gold,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm - 2,
+    },
+    timesText: {
+      fontFamily: font.bold,
+      fontSize: 13,
+      color: c.gold,
+    },
+    arabicWrap: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    tnc: {
+      fontSize: 11,
+      lineHeight: 16,
+    },
+    counterArea: {
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingHorizontal: spacing.base,
+      paddingBottom: spacing.base,
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+    tapCircle: {
+      width: 132,
+      height: 132,
+      borderRadius: 66,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.primarySoft,
+      borderWidth: 2,
+      borderColor: c.primary,
+    },
+    tapCircleDone: {
+      backgroundColor: c.goldSoft,
+      borderColor: c.gold,
+    },
+    countText: {
+      fontFamily: font.extrabold,
+      fontSize: 46,
+      color: c.primary,
+    },
+    countTextDone: {
+      color: c.gold,
+    },
+    circleCaption: {
+      fontFamily: font.semibold,
+      fontSize: 11,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    circleCaptionDone: {
+      color: c.gold,
+    },
+    barMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      alignSelf: 'stretch',
+    },
+    barLabel: {
+      fontSize: 11,
+      flex: 1,
+    },
+    resetBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: c.surfaceAlt,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 4,
+      marginLeft: spacing.sm,
+    },
+    resetText: {
+      fontFamily: font.semibold,
+      fontSize: 11,
+      color: c.textMuted,
+    },
+    barTrack: {
+      alignSelf: 'stretch',
+      height: 8,
+      borderRadius: radius.full,
+      backgroundColor: c.surfaceAlt,
+      overflow: 'hidden',
+    },
+    barTrackDone: {
+      backgroundColor: c.goldSoft,
+    },
+    barFill: {
+      width: '100%',
+      height: 8,
+      borderRadius: radius.full,
+      backgroundColor: c.primary,
+      transformOrigin: 'left',
+    },
+    barFillDone: {
+      backgroundColor: c.gold,
+    },
+    doneChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: c.goldSoft,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm - 2,
+    },
+    doneText: {
+      fontFamily: font.semibold,
+      fontSize: 12,
+      color: c.gold,
+    },
+  });

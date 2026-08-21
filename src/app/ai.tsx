@@ -18,7 +18,7 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { askQalbunAI } from '@/lib/api';
 import { getJSON, setJSON } from '@/lib/storage';
-import { colors, font, gradients, radius, spacing } from '@/theme';
+import { font, radius, spacing, useTheme, type ThemeColors, type ThemeScheme } from '@/theme';
 
 const HISTORY_KEY = 'muslimhub.ai.history';
 
@@ -42,6 +42,9 @@ function createId(prefix: string): string {
 }
 
 export default function QalbunAIScreen() {
+  const { colors, gradients, scheme } = useTheme();
+  const styles = useMemo(() => makeStyles(colors, scheme), [colors, scheme]);
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -235,7 +238,8 @@ export default function QalbunAIScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors, scheme: ThemeScheme) =>
+  StyleSheet.create({
   flex: {
     flex: 1,
   },
@@ -254,14 +258,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 8,
     borderRadius: radius.full,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
   tipText: {
     fontFamily: font.semibold,
     fontSize: 12.5,
-    color: colors.textMuted,
+    color: c.textMuted,
   },
   empty: {
     flex: 1,
@@ -281,13 +285,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontFamily: font.extrabold,
     fontSize: 20,
-    color: colors.text,
+    color: c.text,
   },
   emptyText: {
     fontFamily: font.regular,
     fontSize: 13.5,
     lineHeight: 20,
-    color: colors.textMuted,
+    color: c.textMuted,
     textAlign: 'center',
     maxWidth: 280,
   },
@@ -310,14 +314,14 @@ const styles = StyleSheet.create({
     fontFamily: font.semibold,
     fontSize: 14,
     lineHeight: 20,
-    color: colors.bg,
+    color: scheme === 'dark' ? c.bgDeep : c.white,
   },
   aiBubble: {
     alignSelf: 'flex-start',
     marginBottom: spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderTopLeftRadius: 6,
     gap: spacing.sm,
   },
@@ -325,7 +329,7 @@ const styles = StyleSheet.create({
     fontFamily: font.regular,
     fontSize: 14,
     lineHeight: 21,
-    color: colors.text,
+    color: c.text,
   },
   errorBubble: {
     alignSelf: 'flex-start',
@@ -340,7 +344,7 @@ const styles = StyleSheet.create({
     fontFamily: font.regular,
     fontSize: 13,
     lineHeight: 19,
-    color: colors.danger,
+    color: c.danger,
   },
   retryBtn: {
     flexDirection: 'row',
@@ -356,14 +360,14 @@ const styles = StyleSheet.create({
   retryText: {
     fontFamily: font.semibold,
     fontSize: 12,
-    color: colors.danger,
+    color: c.danger,
   },
   loadingBubble: {
     alignSelf: 'flex-start',
     marginBottom: spacing.md,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderTopLeftRadius: 6,
   },
   loadingInner: {
@@ -379,9 +383,9 @@ const styles = StyleSheet.create({
   inputWrap: {
     flex: 1,
     borderRadius: radius.xl,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
   },
@@ -389,7 +393,7 @@ const styles = StyleSheet.create({
     fontFamily: font.regular,
     fontSize: 14.5,
     lineHeight: 20,
-    color: colors.text,
+    color: c.text,
     maxHeight: 110,
     padding: 0,
   },

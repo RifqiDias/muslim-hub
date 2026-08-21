@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { StyleSheet, ViewStyle } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { PressableScale } from '@/components/ui/pressable-scale';
-import { colors, radius, shadow, spacing } from '@/theme';
+import { ThemeColors, radius, shadow, spacing, useTheme } from '@/theme';
 
 interface ScrollIndicatorEndProps {
   visible: boolean;
@@ -10,7 +11,34 @@ interface ScrollIndicatorEndProps {
   style?: ViewStyle;
 }
 
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    layer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      alignItems: 'flex-end',
+      justifyContent: 'flex-end',
+      paddingBottom: spacing.xl,
+      paddingRight: spacing.xs,
+    },
+    button: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.full,
+      backgroundColor: c.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...shadow.card,
+    },
+  });
+
 export function ScrollIndicatorEnd({ visible, onPress, style }: ScrollIndicatorEndProps) {
+  const { colors, scheme } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   if (!visible) return null;
   return (
     <Animated.View
@@ -21,31 +49,8 @@ export function ScrollIndicatorEnd({ visible, onPress, style }: ScrollIndicatorE
       collapsable={false}
     >
       <PressableScale onPress={onPress} style={styles.button} hitSlop={8}>
-        <Ionicons name="arrow-down" size={22} color={colors.bg} />
+        <Ionicons name="arrow-down" size={22} color={scheme === 'dark' ? '#061009' : '#FFFFFF'} />
       </PressableScale>
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  layer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'flex-end',
-    justifyContent: 'flex-end',
-    paddingBottom: spacing.xl,
-    paddingRight: spacing.xs,
-  },
-  button: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadow.card,
-  },
-});

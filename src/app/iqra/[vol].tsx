@@ -3,7 +3,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Sharing from 'expo-sharing';
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { ErrorState } from '@/components/ui/error-state';
@@ -11,9 +11,20 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { getIqraPdfUrl } from '@/lib/api';
-import { colors, font, gradients, radius, shadow, spacing } from '@/theme';
+import {
+  font,
+  radius,
+  shadow,
+  spacing,
+  useTheme,
+  type ThemeColors,
+  type ThemeScheme,
+} from '@/theme';
 
 export default function IqraVolScreen() {
+  const { colors, gradients, scheme } = useTheme();
+  const styles = useMemo(() => makeStyles(colors, scheme), [colors, scheme]);
+
   const params = useLocalSearchParams<{ vol: string }>();
   const vol = params.vol || '1';
   const cacheDir = FileSystem.cacheDirectory;
@@ -153,7 +164,7 @@ export default function IqraVolScreen() {
                 end={{ x: 1, y: 1 }}
                 style={styles.primaryBtn}
               >
-                <Ionicons name="document-text" size={20} color={colors.bgDeep} />
+                <Ionicons name="document-text" size={20} color={scheme === 'dark' ? colors.bgDeep : colors.white} />
                 <Text style={styles.primaryText}>{opening ? 'Membuka…' : 'Buka PDF'}</Text>
               </LinearGradient>
             </PressableScale>
@@ -170,7 +181,7 @@ export default function IqraVolScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.primaryBtn}
             >
-              <Ionicons name="download" size={20} color={colors.bgDeep} />
+              <Ionicons name="download" size={20} color={scheme === 'dark' ? colors.bgDeep : colors.white} />
               <Text style={styles.primaryText}>Unduh &amp; Buka PDF</Text>
             </LinearGradient>
           </PressableScale>
@@ -185,129 +196,130 @@ export default function IqraVolScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  hero: {
-    borderRadius: radius.xl,
-    overflow: 'hidden',
-  },
-  heroGrad: {
-    alignItems: 'center',
-    padding: spacing.xxl,
-    gap: spacing.xs,
-  },
-  heroIcon: {
-    width: 116,
-    height: 116,
-    borderRadius: 58,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-    marginBottom: spacing.md,
-  },
-  heroTitle: {
-    fontFamily: font.extrabold,
-    fontSize: 28,
-    lineHeight: 34,
-    color: colors.white,
-  },
-  heroSub: {
-    fontFamily: font.regular,
-    fontSize: 13,
-    lineHeight: 18,
-    color: 'rgba(255,255,255,0.75)',
-    textAlign: 'center',
-  },
-  heroStatus: {
-    fontFamily: font.semibold,
-    fontSize: 12,
-    color: colors.gold,
-    marginTop: spacing.sm,
-  },
-  panel: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-    gap: spacing.md,
-    marginTop: spacing.md,
-  },
-  progressBox: {
-    gap: spacing.sm,
-  },
-  progressRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  progressLabel: {
-    fontFamily: font.semibold,
-    fontSize: 13,
-    color: colors.text,
-  },
-  progressPct: {
-    fontFamily: font.bold,
-    fontSize: 13,
-    color: colors.primary,
-  },
-  track: {
-    height: 8,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceAlt,
-    overflow: 'hidden',
-  },
-  fill: {
-    height: '100%',
-    borderRadius: radius.full,
-    backgroundColor: colors.primary,
-  },
-  buttonStack: {
-    gap: spacing.md,
-  },
-  primaryOuter: {
-    borderRadius: radius.full,
-  },
-  primaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    borderRadius: radius.full,
-    paddingVertical: spacing.md + 2,
-  },
-  primaryText: {
-    fontFamily: font.bold,
-    fontSize: 15,
-    color: colors.bgDeep,
-  },
-  ghostBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.md,
-  },
-  ghostText: {
-    fontFamily: font.semibold,
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  note: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  noteText: {
-    fontFamily: font.regular,
-    fontSize: 11,
-    color: colors.textFaint,
-    textAlign: 'center',
-  },
-});
+const makeStyles = (c: ThemeColors, scheme: ThemeScheme) =>
+  StyleSheet.create({
+    hero: {
+      borderRadius: radius.xl,
+      overflow: 'hidden',
+    },
+    heroGrad: {
+      alignItems: 'center',
+      padding: spacing.xxl,
+      gap: spacing.xs,
+    },
+    heroIcon: {
+      width: 116,
+      height: 116,
+      borderRadius: 58,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: scheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(23,39,32,0.06)',
+      borderWidth: 1,
+      borderColor: scheme === 'dark' ? 'rgba(255,255,255,0.14)' : 'rgba(23,39,32,0.12)',
+      marginBottom: spacing.md,
+    },
+    heroTitle: {
+      fontFamily: font.extrabold,
+      fontSize: 28,
+      lineHeight: 34,
+      color: scheme === 'dark' ? c.white : c.text,
+    },
+    heroSub: {
+      fontFamily: font.regular,
+      fontSize: 13,
+      lineHeight: 18,
+      color: scheme === 'dark' ? 'rgba(255,255,255,0.75)' : c.textMuted,
+      textAlign: 'center',
+    },
+    heroStatus: {
+      fontFamily: font.semibold,
+      fontSize: 12,
+      color: c.gold,
+      marginTop: spacing.sm,
+    },
+    panel: {
+      backgroundColor: c.surface,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: spacing.lg,
+      gap: spacing.md,
+      marginTop: spacing.md,
+    },
+    progressBox: {
+      gap: spacing.sm,
+    },
+    progressRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    progressLabel: {
+      fontFamily: font.semibold,
+      fontSize: 13,
+      color: c.text,
+    },
+    progressPct: {
+      fontFamily: font.bold,
+      fontSize: 13,
+      color: c.primary,
+    },
+    track: {
+      height: 8,
+      borderRadius: radius.full,
+      backgroundColor: c.surfaceAlt,
+      overflow: 'hidden',
+    },
+    fill: {
+      height: '100%',
+      borderRadius: radius.full,
+      backgroundColor: c.primary,
+    },
+    buttonStack: {
+      gap: spacing.md,
+    },
+    primaryOuter: {
+      borderRadius: radius.full,
+    },
+    primaryBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      borderRadius: radius.full,
+      paddingVertical: spacing.md + 2,
+    },
+    primaryText: {
+      fontFamily: font.bold,
+      fontSize: 15,
+      color: scheme === 'dark' ? c.bgDeep : c.white,
+    },
+    ghostBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      backgroundColor: c.surfaceAlt,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingVertical: spacing.md,
+    },
+    ghostText: {
+      fontFamily: font.semibold,
+      fontSize: 13,
+      color: c.textMuted,
+    },
+    note: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+    },
+    noteText: {
+      fontFamily: font.regular,
+      fontSize: 11,
+      color: c.textFaint,
+      textAlign: 'center',
+    },
+  });

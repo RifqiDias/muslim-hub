@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
@@ -17,7 +17,7 @@ import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
 import { getNiatShalat } from '@/lib/api';
 import type { NiatShalatItem } from '@/lib/types';
-import { colors, font, radius, spacing } from '@/theme';
+import { font, radius, spacing, ThemeColors, useTheme } from '@/theme';
 
 const RAKAAT_RULES: { keys: string[]; rakaat: number }[] = [
   { keys: ['subuh', 'shubuh', 'fajr', 'subhi'], rakaat: 2 },
@@ -36,6 +36,8 @@ function inferRakaat(name: string): number | null {
 }
 
 function NiatCard({ item, index }: { item: NiatShalatItem; index: number }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expanded, setExpanded] = useState(index === 0);
   const progress = useSharedValue(index === 0 ? 1 : 0);
   const chevronStyle = useAnimatedStyle(() => ({
@@ -86,6 +88,8 @@ function NiatCard({ item, index }: { item: NiatShalatItem; index: number }) {
 }
 
 export default function NiatShalatScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['niat-shalat'],
     queryFn: getNiatShalat,
@@ -107,85 +111,86 @@ export default function NiatShalatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  list: {
-    gap: spacing.md,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.base,
-  },
-  badge: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.goldSoft,
-  },
-  badgeText: {
-    fontFamily: font.extrabold,
-    fontSize: 14,
-    color: colors.gold,
-  },
-  headerText: {
-    flex: 1,
-    gap: 5,
-  },
-  cardTitle: {
-    fontFamily: font.bold,
-    fontSize: 16,
-    color: colors.text,
-  },
-  metaRow: {
-    flexDirection: 'row',
-  },
-  rakaatChip: {
-    backgroundColor: colors.primarySoft,
-    borderRadius: radius.full,
-    paddingHorizontal: 9,
-    paddingVertical: 2,
-    alignSelf: 'flex-start',
-  },
-  rakaatText: {
-    fontFamily: font.semibold,
-    fontSize: 11,
-    color: colors.primary,
-  },
-  chevronWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceAlt,
-  },
-  cardBody: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    padding: spacing.base,
-    gap: spacing.md,
-  },
-  latin: {
-    fontFamily: font.regular,
-    fontStyle: 'italic',
-    fontSize: 13,
-    lineHeight: 20,
-    color: colors.textMuted,
-  },
-  terjemahan: {
-    fontFamily: font.regular,
-    fontSize: 13,
-    lineHeight: 20,
-    color: colors.textFaint,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    list: {
+      gap: spacing.md,
+    },
+    card: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      overflow: 'hidden',
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      padding: spacing.base,
+    },
+    badge: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.goldSoft,
+    },
+    badgeText: {
+      fontFamily: font.extrabold,
+      fontSize: 14,
+      color: c.gold,
+    },
+    headerText: {
+      flex: 1,
+      gap: 5,
+    },
+    cardTitle: {
+      fontFamily: font.bold,
+      fontSize: 16,
+      color: c.text,
+    },
+    metaRow: {
+      flexDirection: 'row',
+    },
+    rakaatChip: {
+      backgroundColor: c.primarySoft,
+      borderRadius: radius.full,
+      paddingHorizontal: 9,
+      paddingVertical: 2,
+      alignSelf: 'flex-start',
+    },
+    rakaatText: {
+      fontFamily: font.semibold,
+      fontSize: 11,
+      color: c.primary,
+    },
+    chevronWrap: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.surfaceAlt,
+    },
+    cardBody: {
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+      padding: spacing.base,
+      gap: spacing.md,
+    },
+    latin: {
+      fontFamily: font.regular,
+      fontStyle: 'italic',
+      fontSize: 13,
+      lineHeight: 20,
+      color: c.textMuted,
+    },
+    terjemahan: {
+      fontFamily: font.regular,
+      fontSize: 13,
+      lineHeight: 20,
+      color: c.textFaint,
+    },
+  });

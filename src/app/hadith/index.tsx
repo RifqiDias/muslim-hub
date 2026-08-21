@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ErrorState } from '@/components/ui/error-state';
@@ -11,18 +12,21 @@ import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
 import { getHadithBooks } from '@/lib/api';
 import { HadithBook } from '@/lib/types';
-import { colors, font, gradients, radius, spacing } from '@/theme';
+import { font, radius, spacing, useTheme, ThemeColors, ThemeGradients } from '@/theme';
 
-const BOOK_GRADIENTS: readonly (readonly [string, string])[] = [
-  gradients.emerald,
-  gradients.teal,
-  gradients.gold,
-  gradients.night,
-  gradients.plum,
+const makeBookGradients = (g: ThemeGradients): readonly (readonly [string, string])[] => [
+  g.emerald,
+  g.teal,
+  g.gold,
+  g.night,
+  g.plum,
 ];
 
 function BookCard({ item, index }: { item: HadithBook; index: number }) {
-  const gradient = BOOK_GRADIENTS[index % BOOK_GRADIENTS.length];
+  const { colors, gradients, scheme } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const bookGradients = makeBookGradients(gradients);
+  const gradient = bookGradients[index % bookGradients.length];
 
   return (
     <Animated.View entering={FadeInDown.springify().delay(index * 70)} style={styles.cardWrap}>
@@ -36,7 +40,12 @@ function BookCard({ item, index }: { item: HadithBook; index: number }) {
           end={{ x: 1, y: 1 }}
           style={styles.card}
         >
-          <View style={styles.iconWrap}>
+          <View
+            style={[
+              styles.iconWrap,
+              { backgroundColor: scheme === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.55)' },
+            ]}
+          >
             <Ionicons name="book" size={22} color={colors.gold} />
           </View>
           <Text style={styles.cardTitle} numberOfLines={2}>
@@ -50,6 +59,8 @@ function BookCard({ item, index }: { item: HadithBook; index: number }) {
 }
 
 export default function HadithIndexScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['hadith-books'],
     queryFn: getHadithBooks,
@@ -71,45 +82,45 @@ export default function HadithIndexScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  cardWrap: {
-    width: '48.5%',
-  },
-  pressArea: {
-    borderRadius: radius.lg,
-  },
-  card: {
-    padding: spacing.base,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.09)',
-    minHeight: 150,
-  },
-  iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  cardTitle: {
-    fontFamily: font.bold,
-    fontSize: 15,
-    lineHeight: 20,
-    color: colors.text,
-  },
-  cardCount: {
-    fontFamily: font.regular,
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.62)',
-    marginTop: spacing.xs + 1,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+    },
+    cardWrap: {
+      width: '48.5%',
+    },
+    pressArea: {
+      borderRadius: radius.lg,
+    },
+    card: {
+      padding: spacing.base,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      minHeight: 150,
+    },
+    iconWrap: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.md,
+    },
+    cardTitle: {
+      fontFamily: font.bold,
+      fontSize: 15,
+      lineHeight: 20,
+      color: c.text,
+    },
+    cardCount: {
+      fontFamily: font.regular,
+      fontSize: 12,
+      color: c.textMuted,
+      marginTop: spacing.xs + 1,
+    },
+  });

@@ -9,14 +9,14 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
-import { colors, font, gradients, radius, spacing } from '@/theme';
+import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
 
 interface DzikirMode {
   type: string;
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  gradient: readonly [string, string];
+  gradient: 'gold' | 'night' | 'emerald';
   time: 'pagi' | 'petang';
 }
 
@@ -26,7 +26,7 @@ const MODES: DzikirMode[] = [
     title: 'Dzikir Pagi',
     subtitle: 'Dibaca pada waktu pagi, sejak terbit fajar hingga menjelang dzuhur',
     icon: 'sunny',
-    gradient: gradients.gold,
+    gradient: 'gold',
     time: 'pagi',
   },
   {
@@ -34,7 +34,7 @@ const MODES: DzikirMode[] = [
     title: 'Dzikir Petang',
     subtitle: 'Dibaca pada waktu petang, sejak Ashar hingga malam hari',
     icon: 'moon',
-    gradient: gradients.night,
+    gradient: 'night',
     time: 'petang',
   },
   {
@@ -42,7 +42,7 @@ const MODES: DzikirMode[] = [
     title: 'Setelah Shalat',
     subtitle: 'Dibaca setiap selesai melaksanakan shalat fardhu',
     icon: 'checkmark-circle',
-    gradient: gradients.emerald,
+    gradient: 'emerald',
     time: 'pagi',
   },
 ];
@@ -79,6 +79,10 @@ const OTHERS = [
 ] as const;
 
 export default function DzikirHubScreen() {
+  const { colors, gradients, scheme } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const iconWrapBg = scheme === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.55)';
+
   const isMorning = useMemo(() => new Date().getHours() < 15, []);
 
   const openMode = (type: string) => {
@@ -99,12 +103,12 @@ export default function DzikirHubScreen() {
           <Animated.View key={mode.type} entering={FadeInDown.springify().delay(index * 110)}>
             <PressableScale onPress={() => openMode(mode.type)} style={styles.modePress}>
               <LinearGradient
-                colors={[...mode.gradient]}
+                colors={[...gradients[mode.gradient]]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.modeCard}
               >
-                <View style={styles.modeIconWrap}>
+                <View style={[styles.modeIconWrap, { backgroundColor: iconWrapBg }]}>
                   <Ionicons name={mode.icon} size={30} color={colors.gold} />
                 </View>
                 <View style={styles.modeTextWrap}>
@@ -116,7 +120,7 @@ export default function DzikirHubScreen() {
                     {mode.subtitle}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.55)" />
+                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
               </LinearGradient>
             </PressableScale>
           </Animated.View>
@@ -139,59 +143,59 @@ export default function DzikirHubScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  modePress: {
-    borderRadius: radius.xl,
-    marginBottom: spacing.md,
-  },
-  modeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.base,
-    padding: spacing.lg,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.09)',
-  },
-  modeIconWrap: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modeTextWrap: {
-    flex: 1,
-  },
-  modeTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  modeTitle: {
-    fontFamily: font.bold,
-    fontSize: 17,
-    color: colors.text,
-  },
-  recommendChip: {
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 2,
-  },
-  recommendText: {
-    fontFamily: font.semibold,
-    fontSize: 10,
-    color: colors.primary,
-  },
-  modeSubtitle: {
-    fontFamily: font.regular,
-    fontSize: 12,
-    lineHeight: 17,
-    color: 'rgba(255,255,255,0.62)',
-    marginTop: 3,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    modePress: {
+      borderRadius: radius.xl,
+      marginBottom: spacing.md,
+    },
+    modeCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.base,
+      padding: spacing.lg,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    modeIconWrap: {
+      width: 58,
+      height: 58,
+      borderRadius: 29,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modeTextWrap: {
+      flex: 1,
+    },
+    modeTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    modeTitle: {
+      fontFamily: font.bold,
+      fontSize: 17,
+      color: c.text,
+    },
+    recommendChip: {
+      backgroundColor: c.primarySoft,
+      borderWidth: 1,
+      borderColor: c.primary,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.sm + 2,
+      paddingVertical: 2,
+    },
+    recommendText: {
+      fontFamily: font.semibold,
+      fontSize: 10,
+      color: c.primary,
+    },
+    modeSubtitle: {
+      fontFamily: font.regular,
+      fontSize: 12,
+      lineHeight: 17,
+      color: c.textMuted,
+      marginTop: 3,
+    },
+  });

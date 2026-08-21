@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ArabicText } from '@/components/ui/arabic-text';
@@ -9,9 +10,11 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
 import { getBacaanShalat } from '@/lib/api';
-import { colors, font, gradients, radius, spacing } from '@/theme';
+import { font, radius, spacing, ThemeColors, useTheme } from '@/theme';
 
 export default function BacaanShalatScreen() {
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['bacaan-shalat'],
     queryFn: getBacaanShalat,
@@ -56,67 +59,68 @@ export default function BacaanShalatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  timeline: {
-    position: 'relative',
-    paddingTop: spacing.sm,
-  },
-  timelineLine: {
-    position: 'absolute',
-    left: 5,
-    top: spacing.sm + 20,
-    bottom: spacing.sm,
-    width: 2,
-    borderRadius: 1,
-  },
-  timelineItem: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  dotWrap: {
-    width: 12,
-    alignItems: 'center',
-    paddingTop: spacing.lg,
-  },
-  dot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.primary,
-    borderWidth: 2,
-    borderColor: colors.bgDeep,
-  },
-  card: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.base,
-    gap: spacing.md,
-  },
-  cardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  cardTitle: {
-    fontFamily: font.bold,
-    fontSize: 15,
-    color: colors.gold,
-  },
-  latin: {
-    fontFamily: font.regular,
-    fontStyle: 'italic',
-    fontSize: 13,
-    lineHeight: 20,
-    color: colors.textMuted,
-  },
-  terjemahan: {
-    fontFamily: font.regular,
-    fontSize: 13,
-    lineHeight: 20,
-    color: colors.textFaint,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    timeline: {
+      position: 'relative',
+      paddingTop: spacing.sm,
+    },
+    timelineLine: {
+      position: 'absolute',
+      left: 5,
+      top: spacing.sm + 20,
+      bottom: spacing.sm,
+      width: 2,
+      borderRadius: 1,
+    },
+    timelineItem: {
+      flexDirection: 'row',
+      gap: spacing.md,
+      marginBottom: spacing.md,
+    },
+    dotWrap: {
+      width: 12,
+      alignItems: 'center',
+      paddingTop: spacing.lg,
+    },
+    dot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: c.primary,
+      borderWidth: 2,
+      borderColor: c.bgDeep,
+    },
+    card: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      padding: spacing.base,
+      gap: spacing.md,
+    },
+    cardTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    cardTitle: {
+      fontFamily: font.bold,
+      fontSize: 15,
+      color: c.gold,
+    },
+    latin: {
+      fontFamily: font.regular,
+      fontStyle: 'italic',
+      fontSize: 13,
+      lineHeight: 20,
+      color: c.textMuted,
+    },
+    terjemahan: {
+      fontFamily: font.regular,
+      fontSize: 13,
+      lineHeight: 20,
+      color: c.textFaint,
+    },
+  });

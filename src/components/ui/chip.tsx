@@ -1,7 +1,8 @@
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { PressableScale } from './pressable-scale';
-import { colors, font, radius, spacing } from '@/theme';
+import { ThemeColors, font, radius, spacing, useTheme } from '@/theme';
 
 export interface ChipOption<K extends string> {
   key: K;
@@ -14,7 +15,42 @@ interface ChipRowProps<K extends string> {
   onChange: (key: K) => void;
 }
 
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    pressArea: {
+      borderRadius: radius.full,
+    },
+    chip: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm + 2,
+      borderRadius: radius.full,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    chipActive: {
+      backgroundColor: c.primarySoft,
+      borderColor: c.primary,
+    },
+    chipText: {
+      fontFamily: font.semibold,
+      fontSize: 13,
+      color: c.textMuted,
+    },
+    chipTextActive: {
+      color: c.primary,
+    },
+  });
+
 export function ChipRow<K extends string>({ options, value, onChange }: ChipRowProps<K>) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   return (
     <Animated.View entering={FadeInDown.duration(400)} style={styles.row}>
       {options.map((option, index) => {
@@ -32,34 +68,3 @@ export function ChipRow<K extends string>({ options, value, onChange }: ChipRowP
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  pressArea: {
-    borderRadius: radius.full,
-  },
-  chip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm + 2,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primary,
-  },
-  chipText: {
-    fontFamily: font.semibold,
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  chipTextActive: {
-    color: colors.primary,
-  },
-});

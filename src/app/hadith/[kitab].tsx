@@ -4,7 +4,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Keyboard, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { ArabicText } from '@/components/ui/arabic-text';
@@ -15,7 +15,7 @@ import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
 import { getHadithBooks, getHadithByNumber, getHadithByRange } from '@/lib/api';
 import { HadithContent } from '@/lib/types';
-import { colors, font, radius, spacing } from '@/theme';
+import { font, radius, spacing, useTheme, ThemeColors } from '@/theme';
 
 const PAGE_SIZE = 50;
 
@@ -28,6 +28,8 @@ interface HadithCardProps {
 }
 
 function HadithCard({ hadith, expanded, onToggle, sourceLabel, delay = 0 }: HadithCardProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [copied, setCopied] = useState(false);
 
   const shareText = `${hadith.arab}\n\n${hadith.id}\n\n(${sourceLabel} No. ${hadith.number})`;
@@ -88,6 +90,8 @@ function HadithCard({ hadith, expanded, onToggle, sourceLabel, delay = 0 }: Hadi
 }
 
 export default function HadithKitabScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const params = useLocalSearchParams<{ kitab?: string; name?: string }>();
   const kitab = params.kitab ?? 'bukhari';
   const name = params.name ?? kitab;
@@ -238,194 +242,195 @@ export default function HadithKitabScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.base,
-    height: 48,
-    marginBottom: spacing.lg,
-  },
-  input: {
-    flex: 1,
-    fontFamily: font.regular,
-    fontSize: 14,
-    color: colors.text,
-    paddingVertical: 0,
-  },
-  searchBtn: {
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm + 2,
-  },
-  searchBtnText: {
-    fontFamily: font.bold,
-    fontSize: 13,
-    color: colors.primary,
-  },
-  section: {
-    gap: spacing.md,
-  },
-  backToList: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    alignSelf: 'flex-start',
-    backgroundColor: colors.primarySoft,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm,
-  },
-  backToListText: {
-    fontFamily: font.semibold,
-    fontSize: 12,
-    color: colors.primary,
-  },
-  pager: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  pagerBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingVertical: spacing.sm + 2,
-  },
-  pagerBtnDisabled: {
-    opacity: 0.45,
-  },
-  pagerBtnText: {
-    fontFamily: font.semibold,
-    fontSize: 13,
-    color: colors.text,
-  },
-  pagerBtnTextDisabled: {
-    color: colors.textFaint,
-  },
-  pagerLabel: {
-    fontFamily: font.bold,
-    fontSize: 13,
-    color: colors.gold,
-  },
-  list: {
-    gap: spacing.md,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.base,
-  },
-  badge: {
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.4)',
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 1,
-  },
-  badgeText: {
-    fontFamily: font.bold,
-    fontSize: 12,
-    color: colors.primary,
-  },
-  preview: {
-    flex: 1,
-    fontFamily: font.regular,
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  cardBody: {
-    paddingHorizontal: spacing.base,
-    paddingBottom: spacing.base,
-    gap: spacing.md,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-  },
-  translation: {
-    fontFamily: font.regular,
-    fontSize: 14,
-    lineHeight: 22,
-    color: colors.textMuted,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  actionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingVertical: spacing.sm + 2,
-  },
-  actionText: {
-    fontFamily: font.semibold,
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  actionTextActive: {
-    color: colors.primary,
-  },
-  loadMore: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.35)',
-    borderRadius: radius.full,
-    paddingVertical: spacing.md,
-    marginTop: spacing.xs,
-  },
-  loadMoreText: {
-    fontFamily: font.bold,
-    fontSize: 14,
-    color: colors.primary,
-  },
-  endText: {
-    fontFamily: font.regular,
-    fontSize: 12,
-    color: colors.textFaint,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-  },
-  emptyText: {
-    fontFamily: font.regular,
-    fontSize: 13,
-    color: colors.textMuted,
-    textAlign: 'center',
-    paddingVertical: spacing.xl,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    searchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.base,
+      height: 48,
+      marginBottom: spacing.lg,
+    },
+    input: {
+      flex: 1,
+      fontFamily: font.regular,
+      fontSize: 14,
+      color: c.text,
+      paddingVertical: 0,
+    },
+    searchBtn: {
+      backgroundColor: c.primarySoft,
+      borderWidth: 1,
+      borderColor: c.primary,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm + 2,
+    },
+    searchBtnText: {
+      fontFamily: font.bold,
+      fontSize: 13,
+      color: c.primary,
+    },
+    section: {
+      gap: spacing.md,
+    },
+    backToList: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      alignSelf: 'flex-start',
+      backgroundColor: c.primarySoft,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.base,
+      paddingVertical: spacing.sm,
+    },
+    backToListText: {
+      fontFamily: font.semibold,
+      fontSize: 12,
+      color: c.primary,
+    },
+    pager: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+    },
+    pagerBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      paddingVertical: spacing.sm + 2,
+    },
+    pagerBtnDisabled: {
+      opacity: 0.45,
+    },
+    pagerBtnText: {
+      fontFamily: font.semibold,
+      fontSize: 13,
+      color: c.text,
+    },
+    pagerBtnTextDisabled: {
+      color: c.textFaint,
+    },
+    pagerLabel: {
+      fontFamily: font.bold,
+      fontSize: 13,
+      color: c.gold,
+    },
+    list: {
+      gap: spacing.md,
+    },
+    card: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      overflow: 'hidden',
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      padding: spacing.base,
+    },
+    badge: {
+      backgroundColor: c.primarySoft,
+      borderWidth: 1,
+      borderColor: c.primary,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs + 1,
+    },
+    badgeText: {
+      fontFamily: font.bold,
+      fontSize: 12,
+      color: c.primary,
+    },
+    preview: {
+      flex: 1,
+      fontFamily: font.regular,
+      fontSize: 13,
+      color: c.textMuted,
+    },
+    cardBody: {
+      paddingHorizontal: spacing.base,
+      paddingBottom: spacing.base,
+      gap: spacing.md,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: c.border,
+    },
+    translation: {
+      fontFamily: font.regular,
+      fontSize: 14,
+      lineHeight: 22,
+      color: c.textMuted,
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    actionBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      backgroundColor: c.surfaceAlt,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      paddingVertical: spacing.sm + 2,
+    },
+    actionText: {
+      fontFamily: font.semibold,
+      fontSize: 13,
+      color: c.textMuted,
+    },
+    actionTextActive: {
+      color: c.primary,
+    },
+    loadMore: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      backgroundColor: c.primarySoft,
+      borderWidth: 1,
+      borderColor: c.primary,
+      borderRadius: radius.full,
+      paddingVertical: spacing.md,
+      marginTop: spacing.xs,
+    },
+    loadMoreText: {
+      fontFamily: font.bold,
+      fontSize: 14,
+      color: c.primary,
+    },
+    endText: {
+      fontFamily: font.regular,
+      fontSize: 12,
+      color: c.textFaint,
+      textAlign: 'center',
+      marginTop: spacing.sm,
+    },
+    emptyText: {
+      fontFamily: font.regular,
+      fontSize: 13,
+      color: c.textMuted,
+      textAlign: 'center',
+      paddingVertical: spacing.xl,
+    },
+  });

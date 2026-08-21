@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { DimensionValue, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
-import { colors } from '@/theme';
+import { useTheme } from '@/theme';
 
 function SkeletonBlock({ width, height, radius = 14, delay = 0 }: { width: DimensionValue; height: number; radius?: number; delay?: number }) {
+  const { colors } = useTheme();
   const opacity = useSharedValue(0.45);
 
   useEffect(() => {
@@ -14,7 +15,7 @@ function SkeletonBlock({ width, height, radius = 14, delay = 0 }: { width: Dimen
 
   return (
     <Animated.View
-      style={[styles.block, { width, height, borderRadius: radius }, animatedStyle]}
+      style={[styles.block, { width, height, borderRadius: radius, backgroundColor: colors.surfaceAlt }, animatedStyle]}
     />
   );
 }
@@ -32,9 +33,7 @@ export function SkeletonList({ count = 5, height = 88 }: { count?: number; heigh
 export { SkeletonBlock };
 
 const styles = StyleSheet.create({
-  block: {
-    backgroundColor: colors.surfaceAlt,
-  },
+  block: {},
   list: {
     gap: 12,
   },

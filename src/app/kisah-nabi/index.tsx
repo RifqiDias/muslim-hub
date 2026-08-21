@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ErrorState } from '@/components/ui/error-state';
@@ -10,14 +11,14 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
 import { getKisahNabi } from '@/lib/api';
-import { colors, font, gradients, radius, shadow, spacing, typography } from '@/theme';
+import { font, radius, shadow, spacing, ThemeColors, ThemeGradients, useTheme } from '@/theme';
 
-const AVATAR_GRADIENTS: readonly (readonly [string, string])[] = [
-  gradients.emerald,
-  gradients.teal,
-  gradients.gold,
-  gradients.night,
-  gradients.plum,
+const makeAvatarGradients = (g: ThemeGradients): readonly (readonly [string, string])[] => [
+  g.emerald,
+  g.teal,
+  g.gold,
+  g.night,
+  g.plum,
 ];
 
 function getInitials(name: string): string {
@@ -26,6 +27,9 @@ function getInitials(name: string): string {
 }
 
 export default function KisahNabiScreen() {
+  const { colors, gradients, typography } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const avatarGradients = makeAvatarGradients(gradients);
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['kisah-nabi'],
     queryFn: getKisahNabi,
@@ -41,7 +45,7 @@ export default function KisahNabiScreen() {
       ) : (
         <View style={styles.list}>
           {data.map((item, index) => {
-            const gradient = AVATAR_GRADIENTS[index % AVATAR_GRADIENTS.length];
+            const gradient = avatarGradients[index % avatarGradients.length];
             return (
               <Animated.View
                 key={item.name}
@@ -61,7 +65,7 @@ export default function KisahNabiScreen() {
                     <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
                   </LinearGradient>
                   <View style={styles.info}>
-                    <Text style={styles.name} numberOfLines={1}>
+                    <Text style={typography.h3} numberOfLines={1}>
                       {item.name}
                     </Text>
                     <View style={styles.chips}>
@@ -86,62 +90,60 @@ export default function KisahNabiScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  list: {
-    gap: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.base,
-    ...shadow.card,
-  },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  avatarText: {
-    fontFamily: font.extrabold,
-    fontSize: 18,
-    color: colors.gold,
-  },
-  info: {
-    flex: 1,
-    gap: spacing.sm,
-  },
-  name: {
-    ...typography.h3,
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 3,
-    borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipText: {
-    fontFamily: font.semibold,
-    fontSize: 11,
-    color: colors.textMuted,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    list: {
+      gap: spacing.md,
+      paddingBottom: spacing.xl,
+    },
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      padding: spacing.base,
+      ...shadow.card,
+    },
+    avatar: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: c.borderStrong,
+    },
+    avatarText: {
+      fontFamily: font.extrabold,
+      fontSize: 18,
+      color: c.gold,
+    },
+    info: {
+      flex: 1,
+      gap: spacing.sm,
+    },
+    chips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 3,
+      borderRadius: radius.full,
+      backgroundColor: c.primarySoft,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    chipText: {
+      fontFamily: font.semibold,
+      fontSize: 11,
+      color: c.textMuted,
+    },
+  });

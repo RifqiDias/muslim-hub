@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeInDown,
@@ -16,9 +16,12 @@ import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
 import { getDoaPilihan } from '@/lib/api';
 import { DoaItem } from '@/lib/types';
-import { colors, font, radius, spacing, typography } from '@/theme';
+import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
 
 export default function DoaPilihanScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: ['doa-pilihan'],
     queryFn: getDoaPilihan,
@@ -46,6 +49,9 @@ export default function DoaPilihanScreen() {
 }
 
 function DoaCard({ item, delay }: { item: DoaItem; delay: number }) {
+  const { colors, typography } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const [open, setOpen] = useState(false);
   const chevron = useSharedValue(0);
 
@@ -65,7 +71,7 @@ function DoaCard({ item, delay }: { item: DoaItem; delay: number }) {
       style={styles.card}
     >
       <View style={styles.titleRow}>
-        <Text style={styles.title} numberOfLines={2}>
+        <Text style={[typography.h3, styles.title]} numberOfLines={2}>
           {item.title}
         </Text>
         {item.notes ? (
@@ -80,7 +86,7 @@ function DoaCard({ item, delay }: { item: DoaItem; delay: number }) {
         {item.arabic}
       </ArabicText>
       <Text style={styles.latin}>{item.latin}</Text>
-      <Text style={styles.translation}>{item.translation}</Text>
+      <Text style={[typography.caption, styles.translation]}>{item.translation}</Text>
 
       {item.fawaid ? (
         <>
@@ -93,99 +99,96 @@ function DoaCard({ item, delay }: { item: DoaItem; delay: number }) {
           </PressableScale>
           {open ? (
             <Animated.View entering={FadeInDown.duration(220)} style={styles.fawaidCard}>
-              <Text style={styles.fawaidText}>{item.fawaid}</Text>
+              <Text style={[typography.body, styles.fawaidText]}>{item.fawaid}</Text>
             </Animated.View>
           ) : null}
         </>
       ) : null}
 
-      {item.source ? <Text style={styles.source}>{item.source}</Text> : null}
+      {item.source ? <Text style={[typography.caption, styles.source]}>{item.source}</Text> : null}
     </Animated.View>
   );
 }
 
-const styles = StyleSheet.create({
-  list: {
-    gap: spacing.md,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.base,
-    gap: spacing.md,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  title: {
-    ...typography.h3,
-    flex: 1,
-  },
-  noteBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.goldSoft,
-    borderWidth: 1,
-    borderColor: 'rgba(232, 180, 79, 0.4)',
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 4,
-  },
-  noteText: {
-    fontFamily: font.semibold,
-    fontSize: 11,
-    color: colors.gold,
-  },
-  arabic: {
-    marginTop: spacing.xs,
-  },
-  latin: {
-    fontFamily: font.regular,
-    fontStyle: 'italic',
-    fontSize: 13,
-    lineHeight: 20,
-    color: colors.textMuted,
-  },
-  translation: {
-    ...typography.caption,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  fawaidToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    alignSelf: 'flex-start',
-    backgroundColor: colors.primarySoft,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm - 2,
-  },
-  fawaidToggleText: {
-    fontFamily: font.semibold,
-    fontSize: 12,
-    color: colors.primary,
-  },
-  fawaidCard: {
-    backgroundColor: colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.base,
-  },
-  fawaidText: {
-    ...typography.body,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  source: {
-    ...typography.caption,
-    color: colors.textFaint,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    list: {
+      gap: spacing.md,
+    },
+    card: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      padding: spacing.base,
+      gap: spacing.md,
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+    },
+    title: {
+      flex: 1,
+    },
+    noteBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: c.goldSoft,
+      borderWidth: 1,
+      borderColor: c.gold,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 4,
+    },
+    noteText: {
+      fontFamily: font.semibold,
+      fontSize: 11,
+      color: c.gold,
+    },
+    arabic: {
+      marginTop: spacing.xs,
+    },
+    latin: {
+      fontFamily: font.regular,
+      fontStyle: 'italic',
+      fontSize: 13,
+      lineHeight: 20,
+      color: c.textMuted,
+    },
+    translation: {
+      fontSize: 13,
+      lineHeight: 19,
+    },
+    fawaidToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      alignSelf: 'flex-start',
+      backgroundColor: c.primarySoft,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.base,
+      paddingVertical: spacing.sm - 2,
+    },
+    fawaidToggleText: {
+      fontFamily: font.semibold,
+      fontSize: 12,
+      color: c.primary,
+    },
+    fawaidCard: {
+      backgroundColor: c.surfaceAlt,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      padding: spacing.base,
+    },
+    fawaidText: {
+      fontSize: 13,
+      lineHeight: 20,
+    },
+    source: {
+      color: c.textFaint,
+    },
+  });

@@ -28,7 +28,7 @@ import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
 import { getDzikir } from '@/lib/api';
 import { DzikirItem, DzikirKind } from '@/lib/types';
-import { colors, font, gradients, radius, spacing, typography } from '@/theme';
+import { font, radius, spacing, useTheme, type ThemeColors } from '@/theme';
 
 const TYPE_CONFIG: Record<string, { kind: DzikirKind; title: string; subtitle: string }> = {
   pagi: { kind: 'dzikir-pagi', title: 'Dzikir Pagi', subtitle: 'Bacaan dzikir waktu pagi' },
@@ -41,6 +41,9 @@ const TYPE_CONFIG: Record<string, { kind: DzikirKind; title: string; subtitle: s
 };
 
 export default function DzikirReaderScreen() {
+  const { colors, gradients, typography } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const { type } = useLocalSearchParams<{ type: string }>();
   const config = TYPE_CONFIG[type ?? ''] ?? TYPE_CONFIG.pagi;
 
@@ -99,7 +102,7 @@ export default function DzikirReaderScreen() {
                 />
               </Animated.View>
             </View>
-            <Text style={styles.progressText}>
+            <Text style={[typography.caption, styles.progressText]}>
               <Text style={styles.progressCurrent}>{Math.min(page + 1, total)}</Text>
               {' / '}
               {total}
@@ -154,18 +157,21 @@ export default function DzikirReaderScreen() {
 }
 
 function DzikirPage({ item, width }: { item: DzikirItem; width: number }) {
+  const { colors, typography } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   return (
     <ScrollView
       style={{ width }}
       contentContainerStyle={styles.pageContent}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.itemTitle}>{item.title}</Text>
+      <Text style={typography.h2}>{item.title}</Text>
       <ArabicText size={34} style={styles.arabic}>
         {item.arabic}
       </ArabicText>
       {item.latin ? <Text style={styles.latin}>{item.latin}</Text> : null}
-      <Text style={styles.translation}>{item.translation}</Text>
+      <Text style={typography.body}>{item.translation}</Text>
       {item.notes ? (
         <View style={styles.noteChip}>
           <Text style={styles.noteText}>{item.notes}</Text>
@@ -174,10 +180,10 @@ function DzikirPage({ item, width }: { item: DzikirItem; width: number }) {
       {item.fawaid ? (
         <View style={styles.fawaidCard}>
           <Text style={styles.fawaidLabel}>Keutamaan</Text>
-          <Text style={styles.fawaidText}>{item.fawaid}</Text>
+          <Text style={[typography.body, styles.fawaidText]}>{item.fawaid}</Text>
         </View>
       ) : null}
-      {item.source ? <Text style={styles.source}>{item.source}</Text> : null}
+      {item.source ? <Text style={[typography.caption, styles.source]}>{item.source}</Text> : null}
     </ScrollView>
   );
 }
@@ -193,6 +199,9 @@ function DzikirDot({
   scrollX: SharedValue<number>;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   const center = index * pageSize;
 
   const dotStyle = useAnimatedStyle(() => ({
@@ -209,131 +218,123 @@ function DzikirDot({
   );
 }
 
-const styles = StyleSheet.create({
-  headerWrap: {
-    paddingHorizontal: spacing.base + 4,
-  },
-  progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  track: {
-    height: 8,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceAlt,
-    overflow: 'hidden',
-  },
-  fillWrap: {
-    height: 8,
-    borderRadius: radius.full,
-    overflow: 'hidden',
-  },
-  fillGradient: {
-    height: 8,
-  },
-  progressText: {
-    ...typography.caption,
-    fontFamily: font.semibold,
-    color: colors.textMuted,
-    minWidth: 52,
-    textAlign: 'right',
-  },
-  progressCurrent: {
-    fontFamily: font.bold,
-    fontSize: 13,
-    color: colors.primary,
-  },
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    alignItems: 'stretch',
-  },
-  stateWrap: {
-    flex: 1,
-    paddingHorizontal: spacing.base + 4,
-    paddingTop: spacing.sm,
-  },
-  pageContent: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.base + 4,
-    paddingVertical: spacing.md,
-    paddingBottom: spacing.xxl,
-    gap: spacing.md,
-  },
-  itemTitle: {
-    ...typography.h2,
-  },
-  arabic: {
-    marginTop: spacing.sm,
-  },
-  latin: {
-    fontFamily: font.regular,
-    fontStyle: 'italic',
-    fontSize: 14,
-    lineHeight: 22,
-    color: colors.textMuted,
-  },
-  translation: {
-    ...typography.body,
-  },
-  noteChip: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.goldSoft,
-    borderWidth: 1,
-    borderColor: 'rgba(232, 180, 79, 0.4)',
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm - 2,
-  },
-  noteText: {
-    fontFamily: font.semibold,
-    fontSize: 12,
-    color: colors.gold,
-  },
-  fawaidCard: {
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.3)',
-    borderRadius: radius.lg,
-    padding: spacing.base,
-    gap: spacing.xs,
-  },
-  fawaidLabel: {
-    fontFamily: font.bold,
-    fontSize: 12,
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  fawaidText: {
-    ...typography.body,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  source: {
-    ...typography.caption,
-    color: colors.textFaint,
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.base,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-  },
-  dotPress: {
-    padding: 3,
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    headerWrap: {
+      paddingHorizontal: spacing.base + 4,
+    },
+    progressRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      marginBottom: spacing.md,
+    },
+    track: {
+      height: 8,
+      borderRadius: radius.full,
+      backgroundColor: c.surfaceAlt,
+      overflow: 'hidden',
+    },
+    fillWrap: {
+      height: 8,
+      borderRadius: radius.full,
+      overflow: 'hidden',
+    },
+    fillGradient: {
+      height: 8,
+    },
+    progressText: {
+      fontFamily: font.semibold,
+      color: c.textMuted,
+      minWidth: 52,
+      textAlign: 'right',
+    },
+    progressCurrent: {
+      fontFamily: font.bold,
+      fontSize: 13,
+      color: c.primary,
+    },
+    list: {
+      flex: 1,
+    },
+    listContent: {
+      alignItems: 'stretch',
+    },
+    stateWrap: {
+      flex: 1,
+      paddingHorizontal: spacing.base + 4,
+      paddingTop: spacing.sm,
+    },
+    pageContent: {
+      flexGrow: 1,
+      paddingHorizontal: spacing.base + 4,
+      paddingVertical: spacing.md,
+      paddingBottom: spacing.xxl,
+      gap: spacing.md,
+    },
+    arabic: {
+      marginTop: spacing.sm,
+    },
+    latin: {
+      fontFamily: font.regular,
+      fontStyle: 'italic',
+      fontSize: 14,
+      lineHeight: 22,
+      color: c.textMuted,
+    },
+    noteChip: {
+      alignSelf: 'flex-start',
+      backgroundColor: c.goldSoft,
+      borderWidth: 1,
+      borderColor: c.gold,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.base,
+      paddingVertical: spacing.sm - 2,
+    },
+    noteText: {
+      fontFamily: font.semibold,
+      fontSize: 12,
+      color: c.gold,
+    },
+    fawaidCard: {
+      backgroundColor: c.primarySoft,
+      borderWidth: 1,
+      borderColor: c.primary,
+      borderRadius: radius.lg,
+      padding: spacing.base,
+      gap: spacing.xs,
+    },
+    fawaidLabel: {
+      fontFamily: font.bold,
+      fontSize: 12,
+      color: c.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+    },
+    fawaidText: {
+      fontSize: 13,
+      lineHeight: 20,
+    },
+    source: {
+      color: c.textFaint,
+    },
+    dotsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: spacing.base,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.md,
+    },
+    dotPress: {
+      padding: 3,
+    },
+    dot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+      backgroundColor: c.primary,
+    },
+  });

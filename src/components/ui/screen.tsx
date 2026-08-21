@@ -1,8 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { PropsWithChildren } from 'react';
+import { PropsWithChildren, useMemo } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, gradients } from '@/theme';
+import { ThemeColors, ThemeGradients, useTheme } from '@/theme';
 
 interface ScreenProps extends PropsWithChildren {
   scroll?: boolean;
@@ -12,7 +12,27 @@ interface ScreenProps extends PropsWithChildren {
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
 }
 
+const makeStyles = (c: ThemeColors, g: ThemeGradients) =>
+  StyleSheet.create({
+    flex: {
+      flex: 1,
+      backgroundColor: c.bg,
+    },
+    scrollContent: {
+      paddingHorizontal: 20,
+      paddingTop: 8,
+      paddingBottom: 40,
+    },
+    plainContent: {
+      paddingHorizontal: 20,
+      paddingTop: 8,
+    },
+  });
+
 export function Screen({ children, scroll = false, contentStyle, refreshing = false, onRefresh, edges }: ScreenProps) {
+  const { colors, gradients } = useTheme();
+  const styles = useMemo(() => makeStyles(colors, gradients), [colors, gradients]);
+
   const body = scroll ? (
     <ScrollView
       style={styles.flex}
@@ -45,19 +65,3 @@ export function Screen({ children, scroll = false, contentStyle, refreshing = fa
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 40,
-  },
-  plainContent: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-  },
-});

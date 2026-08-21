@@ -11,7 +11,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ScrollIndicatorEnd } from '@/components/ensiklopedi-scroll-indicator-end';
 import { ErrorState } from '@/components/ui/error-state';
@@ -19,7 +19,7 @@ import { LoadingView } from '@/components/ui/loading';
 import { PageHeader } from '@/components/ui/page-header';
 import { Screen } from '@/components/ui/screen';
 import { getKisahNabi } from '@/lib/api';
-import { colors, font, gradients, radius, shadow, spacing, typography } from '@/theme';
+import { font, radius, shadow, spacing, ThemeColors, useTheme } from '@/theme';
 
 const REMAINING_THRESHOLD = 320;
 
@@ -30,6 +30,8 @@ function getInitials(name: string): string {
 
 export default function KisahNabiDetailScreen() {
   const { index } = useLocalSearchParams<{ index: string }>();
+  const { colors, gradients, typography } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['kisah-nabi'],
     queryFn: getKisahNabi,
@@ -92,8 +94,8 @@ export default function KisahNabiDetailScreen() {
       ) : !item ? (
         <View style={styles.notFound}>
           <Ionicons name="book-outline" size={48} color={colors.textMuted} />
-          <Text style={styles.notFoundTitle}>Tidak ditemukan</Text>
-          <Text style={styles.notFoundMessage}>
+          <Text style={[typography.h2, styles.notFoundTitle]}>Tidak ditemukan</Text>
+          <Text style={[typography.caption, styles.notFoundMessage]}>
             Kisah yang Anda cari tidak tersedia atau nomor tidak valid.
           </Text>
         </View>
@@ -154,7 +156,7 @@ export default function KisahNabiDetailScreen() {
                   <Animated.Text
                     key={`${parsedIndex}-${i}`}
                     entering={FadeInDown.duration(400).delay(i * 80)}
-                    style={styles.paragraph}
+                    style={typography.body}
                   >
                     {paragraph.trim()}
                   </Animated.Text>
@@ -168,120 +170,116 @@ export default function KisahNabiDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screenContent: {
-    paddingBottom: 0,
-  },
-  flex: {
-    flex: 1,
-  },
-  reader: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: spacing.xxxl,
-  },
-  heroWrap: {
-    borderRadius: radius.xl,
-    overflow: 'hidden',
-    ...shadow.card,
-  },
-  hero: {
-    padding: spacing.lg,
-    gap: spacing.lg,
-  },
-  heroTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  heroAvatar: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  heroAvatarText: {
-    fontFamily: font.extrabold,
-    fontSize: 24,
-    color: colors.bgDeep,
-  },
-  heroInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  heroOrder: {
-    fontFamily: font.semibold,
-    fontSize: 11,
-    color: colors.primary,
-  },
-  heroName: {
-    fontFamily: font.bold,
-    fontSize: 20,
-    lineHeight: 26,
-    color: colors.text,
-  },
-  heroChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 4,
-    borderRadius: radius.full,
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipGold: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 4,
-    borderRadius: radius.full,
-    backgroundColor: colors.goldSoft,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipText: {
-    fontFamily: font.semibold,
-    fontSize: 12,
-    color: colors.primary,
-  },
-  chipTextGold: {
-    fontFamily: font.semibold,
-    fontSize: 12,
-    color: colors.gold,
-  },
-  paragraphs: {
-    marginTop: spacing.lg,
-    gap: spacing.base,
-  },
-  paragraph: {
-    ...typography.body,
-  },
-  notFound: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.xxxl,
-  },
-  notFoundTitle: {
-    ...typography.h2,
-    marginTop: spacing.md,
-  },
-  notFoundMessage: {
-    ...typography.caption,
-    textAlign: 'center',
-    maxWidth: 260,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    screenContent: {
+      paddingBottom: 0,
+    },
+    flex: {
+      flex: 1,
+    },
+    reader: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingBottom: spacing.xxxl,
+    },
+    heroWrap: {
+      borderRadius: radius.xl,
+      overflow: 'hidden',
+      ...shadow.card,
+    },
+    hero: {
+      padding: spacing.lg,
+      gap: spacing.lg,
+    },
+    heroTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    heroAvatar: {
+      width: 68,
+      height: 68,
+      borderRadius: 34,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: c.borderStrong,
+    },
+    heroAvatarText: {
+      fontFamily: font.extrabold,
+      fontSize: 24,
+      color: c.gold,
+    },
+    heroInfo: {
+      flex: 1,
+      gap: 2,
+    },
+    heroOrder: {
+      fontFamily: font.semibold,
+      fontSize: 11,
+      color: c.primary,
+    },
+    heroName: {
+      fontFamily: font.bold,
+      fontSize: 20,
+      lineHeight: 26,
+      color: c.text,
+    },
+    heroChips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 4,
+      borderRadius: radius.full,
+      backgroundColor: c.primarySoft,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    chipGold: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 4,
+      borderRadius: radius.full,
+      backgroundColor: c.goldSoft,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    chipText: {
+      fontFamily: font.semibold,
+      fontSize: 12,
+      color: c.primary,
+    },
+    chipTextGold: {
+      fontFamily: font.semibold,
+      fontSize: 12,
+      color: c.gold,
+    },
+    paragraphs: {
+      marginTop: spacing.lg,
+      gap: spacing.base,
+    },
+    notFound: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.xxxl,
+    },
+    notFoundTitle: {
+      marginTop: spacing.md,
+    },
+    notFoundMessage: {
+      textAlign: 'center',
+      maxWidth: 260,
+    },
+  });

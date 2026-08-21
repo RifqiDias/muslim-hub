@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { PressableScale } from './pressable-scale';
-import { colors, spacing, typography } from '@/theme';
+import { ThemeColors, spacing, useTheme } from '@/theme';
 
 interface PageHeaderProps {
   title: string;
@@ -12,7 +13,47 @@ interface PageHeaderProps {
   right?: React.ReactNode;
 }
 
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.base,
+    },
+    backBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    titles: {
+      flex: 1,
+    },
+    title: {
+      fontFamily: 'Inter_700Bold',
+      fontSize: 22,
+      lineHeight: 28,
+      color: c.text,
+    },
+    subtitle: {
+      fontFamily: 'Inter_400Regular',
+      fontSize: 12,
+      lineHeight: 17,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+  });
+
 export function PageHeader({ title, subtitle, back = true, right }: PageHeaderProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   return (
     <Animated.View entering={FadeInDown.duration(450)} style={styles.row}>
       {back ? (
@@ -34,33 +75,3 @@ export function PageHeader({ title, subtitle, back = true, right }: PageHeaderPr
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.base,
-  },
-  backBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  titles: {
-    flex: 1,
-  },
-  title: {
-    ...typography.h1,
-  },
-  subtitle: {
-    ...typography.caption,
-    marginTop: 2,
-  },
-});

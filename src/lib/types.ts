@@ -25,13 +25,16 @@ export interface Verse {
   number: { inQuran: number; inSurah: number };
   text: { arab: string; transliteration?: { en: string; id?: string } };
   translation?: { en: string; id: string };
-  tafsir?: { kemenag?: { id?: string; short?: string } };
+  tafsir?: { id?: { short?: string; long?: string }; kemenag?: { id?: string; short?: string } };
+  audio?: Record<string, unknown>;
   meta?: Record<string, unknown>;
 }
 
 export interface SurahDetail extends SurahSummary {
   preBismillah: {
-    text: { arab: string; translation: { en: string; id: string } };
+    text: { arab: string; transliteration?: { en?: string } };
+    translation?: { en?: string; id?: string };
+    audio?: Record<string, unknown>;
   } | null;
   verses: Verse[];
 }
