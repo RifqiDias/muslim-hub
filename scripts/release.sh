@@ -103,17 +103,24 @@ capture_screenshots() {
 }
 
 build_aab() {
-  say "Login check EAS"
-  eas whoami >/dev/null 2>&1 || die "belum login EAS — jalankan: eas login"
+  say "Cek login EAS (akan minta login bila belum)"
+  if ! eas whoami >/dev/null 2>&1; then
+    info "Belum login — masukkan akun Expo Anda (daftar gratis di https://expo.dev/signup bila belum punya)"
+    eas login || die "login EAS gagal/dibatalkan"
+    eas whoami >/dev/null 2>&1 || die "login EAS belum berhasil"
+  fi
+  info "login OK: $(eas whoami 2>/dev/null | tail -1)"
 
-  say "Pastikan upload keystore terdaftar (interaktif bila belum)"
-  info "Jika diminta keystore: pilih 'I want to upload my own keystore'"
+  say "Kaitkan/buat project EAS (jawab 'y' bila ditawarkan membuat project)"
+  eas init || die "eas init gagal"
+
+  say "Build AAB produksi — saat ditanya keystore pilih:"
+  info "  'I want to upload my own keystore'"
   info "  path   : credentials/muslim-hub-upload.jks"
-  info "  alias  : muslimhub  (password di credentials/keystore.env)"
-  eas credentials -p android || true
-
-  say "Build AAB produksi (EAS cloud)"
-  eas build --platform android --profile production --non-interactive
+  info "  alias  : muslimhub"
+  info "  passwords (store & key): lihat credentials/keystore.env"
+  eas build --platform android --profile production \
+    || die "eas build gagal — periksa pesan EAS di atas"
   info "AAB selesai — URL unduh tampil di output EAS di atas"
 }
 
