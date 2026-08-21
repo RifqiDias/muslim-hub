@@ -1,4 +1,3 @@
-import Constants from 'expo-constants';
 import {
   ApiEnvelope,
   AsmaulHusnaItem,
@@ -29,9 +28,7 @@ import {
 } from './types';
 
 const API_BASE = 'https://api.qalbun.my.id';
-const API_KEY =
-  (Constants.expoConfig?.extra?.apiKey as string | undefined) ??
-  '';
+const API_KEY = process.env.EXPO_PUBLIC_QALBUN_API_KEY ?? '';
 
 interface WallpaerResponse {
   code: number;
