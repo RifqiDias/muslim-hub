@@ -14,7 +14,7 @@ import { registerStrings, useLang } from '@/i18n';
 import { getMushaf } from '@/lib/api';
 import { getJSON, setJSON } from '@/lib/storage';
 import { MushafAyah } from '@/lib/types';
-import { ThemeColors, font, radius, spacing, useTheme } from '@/theme';
+import { ThemeColors, font, radius, shadow, spacing, useTheme } from '@/theme';
 
 registerStrings('mushaf', {
   title: 'Mode Mushaf',
@@ -80,6 +80,12 @@ export default function MushafScreen() {
   });
   const [chromeVisible, setChromeVisible] = useState(false);
   const [fontStep, setFontStep] = useState(1);
+
+  useEffect(() => {
+    if (!chromeVisible) return;
+    const id = setTimeout(() => setChromeVisible(false), 3200);
+    return () => clearTimeout(id);
+  }, [chromeVisible, currentPage]);
 
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['mushaf'],
@@ -208,71 +214,68 @@ export default function MushafScreen() {
 
   return (
     <View style={styles.flex}>
-      <FlatList
-        ref={listRef}
-        data={pages}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(_, index) => String(index)}
-        renderItem={renderItem}
-        getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
-        initialScrollIndex={Math.min(currentPage, pages.length - 1)}
-        onScrollEndDrag={(event) => {
-          const velocity = event.nativeEvent.velocity;
-          if (!velocity || Math.abs(velocity.x) < 0.15) {
+      <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+        <FlatList
+          ref={listRef}
+          data={pages}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(_, index) => String(index)}
+          renderItem={renderItem}
+          getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+          initialScrollIndex={Math.min(currentPage, pages.length - 1)}
+          onScrollEndDrag={(event) => {
+            const velocity = event.nativeEvent.velocity;
+            if (!velocity || Math.abs(velocity.x) < 0.15) {
+              const next = Math.round(event.nativeEvent.contentOffset.x / width);
+              if (next !== currentPage && next >= 0 && next < pages.length) {
+                setCurrentPage(next);
+                setChromeVisible(false);
+              }
+            }
+          }}
+          onMomentumScrollEnd={(event) => {
             const next = Math.round(event.nativeEvent.contentOffset.x / width);
             if (next !== currentPage && next >= 0 && next < pages.length) {
               setCurrentPage(next);
               setChromeVisible(false);
             }
-          }
-        }}
-        onMomentumScrollEnd={(event) => {
-          const next = Math.round(event.nativeEvent.contentOffset.x / width);
-          if (next !== currentPage && next >= 0 && next < pages.length) {
-            setCurrentPage(next);
-            setChromeVisible(false);
-          }
-        }}
-        windowSize={2}
-        initialNumToRender={1}
-        maxToRenderPerBatch={2}
-      />
+          }}
+          windowSize={2}
+          initialNumToRender={1}
+          maxToRenderPerBatch={2}
+        />
+      </SafeAreaView>
 
       {chromeVisible ? (
         <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={styles.chrome} pointerEvents="box-none">
-          <SafeAreaView style={styles.chromeSafe} edges={['top']}>
-            <View style={styles.chromeBar}>
-              <PressableScale onPress={() => router.back()} style={styles.chromeBtn} hitSlop={8}>
-                <Ionicons name="arrow-back" size={20} color={colors.text} />
-              </PressableScale>
-              <View style={styles.chromeTitles}>
-                <Text style={styles.chromeTitle} numberOfLines={1}>
-                  {t('mushaf.title')}
-                </Text>
-                <Text style={styles.chromeSubtitle} numberOfLines={1}>
-                  {t('mushaf.pageOf', { current: currentPage + 1, total: pages.length })}
-                </Text>
-              </View>
-              <PressableScale
-                onPress={() => setFontStep((step) => (step + 1) % FONT_STEPS.length)}
-                style={styles.chromeBtn}
-                hitSlop={8}
-              >
-                <Ionicons name="text" size={20} color={colors.text} />
-              </PressableScale>
-              <PressableScale
-                onPress={() =>
-                  router.push({ pathname: '/quran/[surah]', params: { surah: String(currentSurah) } })
-                }
-                style={styles.chromeBtn}
-                hitSlop={8}
-              >
-                <Ionicons name="list" size={20} color={colors.text} />
-              </PressableScale>
+          <View style={styles.chromeBar}>
+            <PressableScale onPress={() => router.back()} style={styles.chromeBtn} hitSlop={8}>
+              <Ionicons name="arrow-back" size={20} color={colors.text} />
+            </PressableScale>
+            <View style={styles.chromeTitles}>
+              <Text style={styles.chromeTitle} numberOfLines={1}>
+                {t('mushaf.pageOf', { current: currentPage + 1, total: pages.length })}
+              </Text>
             </View>
-          </SafeAreaView>
+            <PressableScale
+              onPress={() => setFontStep((step) => (step + 1) % FONT_STEPS.length)}
+              style={styles.chromeBtn}
+              hitSlop={8}
+            >
+              <Ionicons name="text" size={20} color={colors.text} />
+            </PressableScale>
+            <PressableScale
+              onPress={() =>
+                router.push({ pathname: '/quran/[surah]', params: { surah: String(currentSurah) } })
+              }
+              style={styles.chromeBtn}
+              hitSlop={8}
+            >
+              <Ionicons name="list" size={20} color={colors.text} />
+            </PressableScale>
+          </View>
         </Animated.View>
       ) : null}
     </View>
@@ -365,25 +368,21 @@ const makeStyles = (c: ThemeColors, scheme: 'light' | 'dark') =>
     },
     chrome: {
       position: 'absolute' as const,
-      top: 0,
-      left: 0,
-      right: 0,
-    },
-    chromeSafe: {
-      alignItems: 'stretch',
+      left: spacing.base,
+      right: spacing.base,
+      bottom: 58,
     },
     chromeBar: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
-      marginHorizontal: spacing.base,
-      marginTop: spacing.sm,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-      backgroundColor: scheme === 'dark' ? 'rgba(10,21,18,0.92)' : 'rgba(255,255,255,0.95)',
+      backgroundColor: scheme === 'dark' ? 'rgba(10,21,18,0.94)' : 'rgba(255,255,255,0.96)',
       borderRadius: radius.full,
       borderWidth: 1,
       borderColor: c.border,
+      ...shadow.card,
     },
     chromeBtn: {
       width: 38,
@@ -398,14 +397,9 @@ const makeStyles = (c: ThemeColors, scheme: 'light' | 'dark') =>
       alignItems: 'center',
     },
     chromeTitle: {
-      fontFamily: font.bold,
-      fontSize: 14,
+      fontFamily: font.semibold,
+      fontSize: 13,
       color: c.text,
-    },
-    chromeSubtitle: {
-      fontFamily: font.regular,
-      fontSize: 11,
-      color: c.textMuted,
-      marginTop: 1,
+      fontVariant: ['tabular-nums'],
     },
   });
