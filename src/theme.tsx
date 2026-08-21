@@ -224,12 +224,12 @@ function readStoredPreference(): Promise<ThemePreference> {
 
 export function ThemeProvider({ children }: PropsWithChildren) {
   const systemScheme = useColorScheme();
-  const [preference, setPreferenceState] = useState<ThemePreference>('system');
+  const [preference, setPreferenceState] = useState<ThemePreference>('light');
 
   useEffect(() => {
     let active = true;
     readStoredPreference().then((value) => {
-      if (active) setPreferenceState(value);
+      if (active && (value === 'light' || value === 'dark')) setPreferenceState(value);
     });
     return () => {
       active = false;
@@ -254,5 +254,5 @@ export function ThemeProvider({ children }: PropsWithChildren) {
 
 export function useTheme(): AppTheme {
   const theme = useContext(ThemeContext as Context<AppTheme | null>);
-  return theme ?? buildTheme('dark', 'system', () => undefined);
+  return theme ?? buildTheme('light', 'light', () => undefined);
 }
