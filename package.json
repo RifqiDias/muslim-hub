@@ -57,5 +57,11 @@
     "web": "expo start --web",
     "lint": "expo lint"
   },
-  "private": true
+  "private": true,
+  "pnpm": {
+    "overrides": {
+      "electron-to-chromium": "1.5.411",
+      "negotiator": "1.0.0"
+    }
+  }
 }
