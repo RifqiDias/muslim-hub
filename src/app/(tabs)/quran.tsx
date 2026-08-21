@@ -82,7 +82,7 @@ export default function QuranListScreen() {
   }, [data, query, meaning]);
 
   return (
-    <Screen scroll={false} contentStyle={styles.flex}>
+    <Screen scroll={false} contentStyle={styles.screenContent}>
       <PageHeader
         back={false}
         title={t('quranList.title')}
@@ -201,18 +201,21 @@ const makeStyles = (c: ThemeColors) =>
     flex: {
       flex: 1,
     },
+    screenContent: {
+      flex: 1,
+      paddingHorizontal: 8,
+    },
     list: {
       flex: 1,
     },
     listContent: {
-      paddingHorizontal: 12,
+      paddingHorizontal: 0,
       paddingTop: spacing.md,
       paddingBottom: spacing.xxl,
     },
     body: {
-      paddingHorizontal: spacing.base,
-      paddingTop: spacing.md,
       flex: 1,
+      paddingTop: spacing.md,
     },
     lastReadPress: {
       borderRadius: radius.lg,
