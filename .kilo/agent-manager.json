@@ -1,38 +1,18 @@
 {
   "worktrees": {},
   "sessions": {
-    "ses_fdda9619dffekvkT8esAe66CrI": {
+    "ses_fdd8df464ffe8irDm7buao2msl": {
       "worktreeId": null,
-      "createdAt": "2026-08-21T03:21:37.128Z"
+      "createdAt": "2026-08-21T03:51:34.560Z"
     },
-    "ses_fdda96169ffepySH2Yu5drBdky": {
+    "ses_fdd8df403fferilbwrr8dkfsdd": {
       "worktreeId": null,
-      "createdAt": "2026-08-21T03:21:37.179Z"
-    },
-    "ses_fdda96120ffe81605IK5wBm3Ed": {
-      "worktreeId": null,
-      "createdAt": "2026-08-21T03:21:37.250Z"
-    },
-    "ses_fdda960d0ffeRDmBYS365Ynj6W": {
-      "worktreeId": null,
-      "createdAt": "2026-08-21T03:21:37.368Z"
-    },
-    "ses_fdda9604fffeJFhsXd4vshesAa": {
-      "worktreeId": null,
-      "createdAt": "2026-08-21T03:21:37.462Z"
-    },
-    "ses_fdda96010ffekwZ3yNiD9SoyC5": {
-      "worktreeId": null,
-      "createdAt": "2026-08-21T03:21:37.526Z"
-    },
-    "ses_fdda95fcdffe7SwV3ITBzFoZ6r": {
-      "worktreeId": null,
-      "createdAt": "2026-08-21T03:21:37.601Z"
+      "createdAt": "2026-08-21T03:51:34.655Z"
     }
   },
   "tabOrder": {
     "local": [
-      "pending:1741f95d-aa6f-4112-bd9d-994661c73c86"
+      "pending:a4f65edc-6260-41e8-9888-cb3bf9ddc64e"
     ]
   },
   "sessionsCollapsed": true

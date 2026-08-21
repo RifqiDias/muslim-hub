@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -51,11 +50,6 @@ export default function WallpaperScreen() {
     if (!url || savePct !== null) return;
     setSavePct(0);
     try {
-      const permission = await MediaLibrary.requestPermissionsAsync(true);
-      if (!permission.granted) {
-        showToast('Izin akses galeri ditolak');
-        return;
-      }
       const cacheDir = FileSystem.cacheDirectory;
       if (!cacheDir) throw new Error('storage');
       const fileUri = `${cacheDir}wall-${Date.now()}.jpg`;
@@ -65,8 +59,21 @@ export default function WallpaperScreen() {
       });
       const result = await task.downloadAsync();
       if (!result) throw new Error('download');
-      await MediaLibrary.Asset.create(result.uri);
-      showToast('Wallpaper tersimpan di galeri');
+      try {
+        const MediaLibrary = await import('expo-media-library');
+        const permission = await MediaLibrary.requestPermissionsAsync(true);
+        if (!permission.granted) {
+          showToast('Izin akses galeri ditolak');
+          return;
+        }
+        await MediaLibrary.Asset.create(result.uri);
+        showToast('Wallpaper tersimpan di galeri');
+      } catch {
+        await Sharing.shareAsync(result.uri, {
+          mimeType: 'image/jpeg',
+          dialogTitle: 'Simpan Wallpaper Islami',
+        });
+      }
     } catch {
       showToast('Gagal menyimpan wallpaper');
     } finally {

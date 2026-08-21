@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { ErrorState } from '@/components/ui/error-state';
 import { PageHeader } from '@/components/ui/page-header';
@@ -354,18 +354,7 @@ export default function JadwalShalatScreen() {
   };
 
   return (
-    <Screen
-      scroll
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefetching}
-          onRefresh={() => refetch()}
-          tintColor={colors.primary}
-          colors={[colors.primary]}
-          progressBackgroundColor={colors.surface}
-        />
-      }
-    >
+    <Screen scroll refreshing={isRefetching} onRefresh={() => refetch()}>
       <PageHeader back={false} title="Jadwal Shalat" subtitle="Waktu shalat hari ini" />
       <PressableScale onPress={() => setModalVisible(true)} style={styles.cityBar}>
         <Ionicons name="location-sharp" size={15} color={colors.gold} />

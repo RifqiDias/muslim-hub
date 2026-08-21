@@ -9,11 +9,11 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.muslimhub.app",
+      "bundleIdentifier": "rifqi.muslimhub",
       "supportsTablet": false
     },
     "android": {
-      "package": "com.muslimhub.app",
+      "package": "rifqi.muslimhub",
       "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#0A1512",
