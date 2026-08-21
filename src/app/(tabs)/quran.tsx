@@ -205,7 +205,7 @@ const makeStyles = (c: ThemeColors) =>
       flex: 1,
     },
     listContent: {
-      paddingHorizontal: spacing.base,
+      paddingHorizontal: 8,
       paddingTop: spacing.md,
       paddingBottom: spacing.xxl,
     },
@@ -288,7 +288,7 @@ const makeStyles = (c: ThemeColors) =>
       alignItems: 'center',
       gap: spacing.md,
       paddingVertical: 12,
-      paddingHorizontal: spacing.xs,
+      paddingHorizontal: 0,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: c.border,
     },
