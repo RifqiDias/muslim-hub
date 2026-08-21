@@ -30,6 +30,7 @@ export const StorageKeys = {
   favoriteDoa: 'muslimhub.fav.doa',
   favoriteAsmaul: 'muslimhub.fav.asmaul',
   city: 'muslimhub.city',
+  cityV2: 'muslimhub.city.v2',
 } as const;
 
 export async function getString(key: string): Promise<string | null> {

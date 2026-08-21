@@ -11,9 +11,11 @@ import { Screen } from '@/components/ui/screen';
 import { SearchBar } from '@/components/ui/search-bar';
 import { SkeletonList } from '@/components/ui/skeleton';
 import { registerStrings, useLang } from '@/i18n';
-import { getPrayerTimes } from '@/lib/api';
-import { getString, removeItem, setString, StorageKeys } from '@/lib/storage';
-import type { PrayerTimesData } from '@/lib/types';
+import { getMyQuranCities, getMyQuranJadwal } from '@/lib/api';
+import { mapTimings, Timings, titleCaseWords, zonaDateKey, zonaHijri } from '@/lib/jadwal';
+import { getJSON, removeItem, setJSON, StorageKeys } from '@/lib/storage';
+import { useZonaTime, zonaMinutesOfDay, zonaSecondsOfDay } from '@/lib/use-zona-time';
+import { MyQuranCity } from '@/lib/types';
 import { font, radius, shadow, spacing, ThemeColors, useTheme } from '@/theme';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
@@ -65,38 +67,6 @@ registerStrings('jadwal', {
   timeIsha: 'Isha',
 });
 
-const CITIES = [
-  'jakarta',
-  'bandung',
-  'surabaya',
-  'medan',
-  'makassar',
-  'semarang',
-  'palembang',
-  'yogyakarta',
-  'denpasar',
-  'balikpapan',
-  'aceh',
-  'padang',
-  'pekanbaru',
-  'bogor',
-  'tasikmalaya',
-  'cirebon',
-  'solo',
-  'malang',
-  'samarinda',
-  'banjarmasin',
-  'manado',
-  'gorontalo',
-  'kendari',
-  'kupang',
-  'ambon',
-  'ternate',
-  'jayapura',
-  'sorong',
-  'batam',
-];
-
 const NEXT_SEQUENCE: { key: ScheduleKey; label: string }[] = [
   { key: 'Fajr', label: 'timeFajr' },
   { key: 'Sunrise', label: 'timeSunrise' },
@@ -106,7 +76,7 @@ const NEXT_SEQUENCE: { key: ScheduleKey; label: string }[] = [
   { key: 'Isha', label: 'timeIsha' },
 ];
 
-const TIME_ITEMS: { key: keyof PrayerTimesData['timings']; label: string; icon: IoniconName }[] = [
+const TIME_ITEMS: { key: keyof Timings; label: string; icon: IoniconName }[] = [
   { key: 'Imsak', label: 'timeImsak', icon: 'moon-outline' },
   { key: 'Fajr', label: 'timeFajr', icon: 'moon' },
   { key: 'Sunrise', label: 'timeSunrise', icon: 'partly-sunny-outline' },
@@ -138,35 +108,29 @@ function toMinutes(time: string): number {
   return parseInt(h, 10) * 60 + parseInt(m, 10);
 }
 
-function secondsOfDay(date: Date): number {
-  return date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
-}
-
 function formatTime(time: string): string {
   return time.split(' ')[0];
-}
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function CountdownClock({
   targetMinutes,
   dayOffset,
+  zonaOffsetMs,
   onExpire,
 }: {
   targetMinutes: number;
   dayOffset: number;
+  zonaOffsetMs: number;
   onExpire: () => void;
 }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const [nowSeconds, setNowSeconds] = useState(() => secondsOfDay(new Date()));
+  const { colors, scheme } = useTheme();
+  const styles = useMemo(() => makeStyles(colors, scheme), [colors, scheme]);
+  const [nowSeconds, setNowSeconds] = useState(() => zonaSecondsOfDay(zonaOffsetMs));
 
   useEffect(() => {
-    const id = setInterval(() => setNowSeconds(secondsOfDay(new Date())), 1000);
+    const id = setInterval(() => setNowSeconds(zonaSecondsOfDay(zonaOffsetMs)), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [zonaOffsetMs]);
 
   const remaining = Math.max(targetMinutes * 60 + dayOffset * 86400 - nowSeconds, 0);
 
@@ -192,17 +156,20 @@ function CountdownClock({
 function HeroCard({
   schedule,
   cityName,
+  zonaOffsetMs,
   onExpire,
   onOpenCity,
 }: {
   schedule: NextSchedule;
   cityName: string;
+  zonaOffsetMs: number;
   onExpire: () => void;
   onOpenCity: () => void;
 }) {
-  const { colors, gradients } = useTheme();
+  const { colors, gradients, scheme } = useTheme();
   const { t } = useLang();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const styles = useMemo(() => makeStyles(colors, scheme), [colors, scheme]);
+  const onGradient = scheme === 'dark' ? '#061009' : '#FFFFFF';
 
   return (
     <Animated.View entering={FadeInDown.duration(450)}>
@@ -213,33 +180,34 @@ function HeroCard({
         style={styles.hero}
       >
         <View style={styles.heroDeco} pointerEvents="none">
-          <Ionicons name={HERO_ORNAMENT[schedule.key]} size={150} color={colors.white} />
+          <Ionicons name={HERO_ORNAMENT[schedule.key]} size={190} color={onGradient} />
         </View>
         <View style={styles.heroTop}>
           <View style={styles.heroBadge}>
-            <Ionicons name="time-outline" size={12} color={colors.white} />
+            <View style={styles.heroBadgeDot} />
             <Text style={styles.heroBadgeText}>{t('jadwal.nextBadge')}</Text>
           </View>
           <PressableScale onPress={onOpenCity} style={styles.heroCity} scaleTo={0.96}>
-            <Ionicons name="location" size={12} color={colors.primaryDeep} />
-            <Text style={styles.heroCityText} numberOfLines={1}>
+            <Ionicons name="location" size={12} color={onGradient} />
+            <Text style={[styles.heroCityText, { color: onGradient }]} numberOfLines={1}>
               {cityName}
             </Text>
-            <Ionicons name="chevron-down" size={12} color={colors.primaryDeep} />
+            <Ionicons name="chevron-down" size={12} color={onGradient} />
           </PressableScale>
         </View>
         <View style={styles.heroBody}>
-          <Text style={styles.heroName}>{t(`jadwal.${schedule.label}`)}</Text>
-          <Text style={styles.heroTime} allowFontScaling={false}>
+          <Text style={[styles.heroName, { color: onGradient }]}>{t(`jadwal.${schedule.label}`)}</Text>
+          <Text style={[styles.heroTime, { color: onGradient }]} allowFontScaling={false}>
             {formatTime(schedule.time)}
           </Text>
         </View>
         <CountdownClock
           targetMinutes={schedule.targetMinutes}
           dayOffset={schedule.dayOffset}
+          zonaOffsetMs={zonaOffsetMs}
           onExpire={onExpire}
         />
-        <Text style={styles.heroCaption}>
+        <Text style={[styles.heroCaption, { color: onGradient }]}>
           {t('jadwal.untilCaption', { name: t(`jadwal.${schedule.label}`) })}
         </Text>
       </LinearGradient>
@@ -252,11 +220,11 @@ function Timeline({
   timings,
 }: {
   schedule: NextSchedule;
-  timings: PrayerTimesData['timings'];
+  timings: Timings;
 }) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const { t } = useLang();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const styles = useMemo(() => makeStyles(colors, scheme), [colors, scheme]);
 
   return (
     <Animated.View entering={FadeInDown.delay(90).duration(450)} style={styles.timelineWrap}>
@@ -284,12 +252,10 @@ function Timeline({
   );
 }
 
-function DateCard({ data }: { data: PrayerTimesData }) {
-  const { colors } = useTheme();
+function DateCard({ gregorianText, hijriText }: { gregorianText: string; hijriText: string }) {
+  const { colors, scheme } = useTheme();
   const { t } = useLang();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const hijri = data.date?.hijri;
-  const hijriText = hijri ? [hijri.day, hijri.month?.en, hijri.year].filter(Boolean).join(' ') : '';
+  const styles = useMemo(() => makeStyles(colors, scheme), [colors, scheme]);
 
   return (
     <Animated.View entering={FadeInDown.delay(150).duration(450)} style={styles.dateCard}>
@@ -299,7 +265,7 @@ function DateCard({ data }: { data: PrayerTimesData }) {
           <Text style={styles.dateLabel}>{t('jadwal.gregorian')}</Text>
         </View>
         <Text style={styles.dateValue} numberOfLines={1}>
-          {data.date?.readable ?? '-'}
+          {gregorianText || '-'}
         </Text>
       </View>
       <View style={styles.dateDivider} />
@@ -329,9 +295,9 @@ function TimeRow({
   highlighted: boolean;
   index: number;
 }) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const { t } = useLang();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const styles = useMemo(() => makeStyles(colors, scheme), [colors, scheme]);
 
   return (
     <Animated.View
@@ -371,8 +337,8 @@ function CityOption({
   icon?: IoniconName;
   onPress: () => void;
 }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { colors, scheme } = useTheme();
+  const styles = useMemo(() => makeStyles(colors, scheme), [colors, scheme]);
 
   return (
     <PressableScale
@@ -395,30 +361,35 @@ function CityOption({
 function CityModal({
   visible,
   current,
+  cities,
+  citiesLoading,
   onSelect,
   onClose,
 }: {
   visible: boolean;
-  current: string | null;
-  onSelect: (city: string | null) => void;
+  current: MyQuranCity | null;
+  cities: MyQuranCity[];
+  citiesLoading: boolean;
+  onSelect: (city: MyQuranCity | null) => void;
   onClose: () => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const { t } = useLang();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const styles = useMemo(() => makeStyles(colors, scheme), [colors, scheme]);
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    return normalized ? CITIES.filter((city) => city.includes(normalized)) : CITIES;
-  }, [query]);
+    if (!normalized) return cities;
+    return cities.filter((city) => city.lokasi.toLowerCase().includes(normalized));
+  }, [cities, query]);
 
   const handleClose = () => {
     setQuery('');
     onClose();
   };
 
-  const handleSelect = (city: string | null) => {
+  const handleSelect = (city: MyQuranCity | null) => {
     setQuery('');
     onSelect(city);
   };
@@ -450,15 +421,19 @@ function CityModal({
               active={current === null}
               onPress={() => handleSelect(null)}
             />
-            {filtered.map((city) => (
-              <CityOption
-                key={city}
-                label={capitalize(city)}
-                active={current === city}
-                onPress={() => handleSelect(city)}
-              />
-            ))}
-            {filtered.length === 0 ? (
+            {citiesLoading ? (
+              <Text style={styles.modalEmpty}>{t('common.loading')}</Text>
+            ) : (
+              filtered.map((city) => (
+                <CityOption
+                  key={city.id}
+                  label={titleCaseWords(city.lokasi)}
+                  active={current?.id === city.id}
+                  onPress={() => handleSelect(city)}
+                />
+              ))
+            )}
+            {!citiesLoading && filtered.length === 0 ? (
               <Text style={styles.modalEmpty}>{t('jadwal.cityNotFound')}</Text>
             ) : null}
           </ScrollView>
@@ -469,17 +444,18 @@ function CityModal({
 }
 
 export default function JadwalShalatScreen() {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const { t } = useLang();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const [city, setCity] = useState<string | null>(null);
+  const styles = useMemo(() => makeStyles(colors, scheme), [colors, scheme]);
+  const { zonaOffsetMs, zonaCityId } = useZonaTime();
+  const [city, setCity] = useState<MyQuranCity | null>(null);
   const [cityLoaded, setCityLoaded] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
     let active = true;
-    getString(StorageKeys.city).then((stored) => {
+    getJSON<MyQuranCity>(StorageKeys.cityV2).then((stored) => {
       if (!active) return;
       setCity(stored);
       setCityLoaded(true);
@@ -489,46 +465,61 @@ export default function JadwalShalatScreen() {
     };
   }, []);
 
-  const { data, isPending, isError, isRefetching, refetch } = useQuery({
-    queryKey: ['prayer-times', city],
-    queryFn: () => getPrayerTimes(city ? { city } : undefined),
-    enabled: cityLoaded,
+  const citiesQuery = useQuery({
+    queryKey: ['myquran-cities'],
+    queryFn: getMyQuranCities,
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
+
+  const effectiveCityId = city?.id ?? zonaCityId;
+  const dateKey = zonaDateKey(zonaOffsetMs);
+
+  const { data, isPending, isError, isRefetching, refetch } = useQuery({
+    queryKey: ['myquran-jadwal', effectiveCityId, dateKey],
+    queryFn: () => getMyQuranJadwal(effectiveCityId, dateKey),
+    enabled: cityLoaded,
+    staleTime: 1000 * 60 * 30,
+  });
+
+  const timings = useMemo(() => (data ? mapTimings(data.jadwal) : null), [data]);
 
   const handleExpire = useCallback(() => setTick((t) => t + 1), []);
 
   const schedule = useMemo<NextSchedule | null>(() => {
-    if (!data) return null;
-    const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
-    const next = NEXT_SEQUENCE.find((p) => toMinutes(data.timings[p.key]) > nowMin);
+    if (!timings) return null;
+    const nowMin = zonaMinutesOfDay(zonaOffsetMs);
+    const next = NEXT_SEQUENCE.find((p) => toMinutes(timings[p.key]) > nowMin);
     if (next) {
       return {
         key: next.key,
         label: next.label,
-        time: data.timings[next.key],
-        targetMinutes: toMinutes(data.timings[next.key]),
+        time: timings[next.key],
+        targetMinutes: toMinutes(timings[next.key]),
         dayOffset: 0,
       };
     }
     return {
       key: 'Fajr',
       label: 'timeFajr',
-      time: data.timings.Fajr,
-      targetMinutes: toMinutes(data.timings.Fajr),
+      time: timings.Fajr,
+      targetMinutes: toMinutes(timings.Fajr),
       dayOffset: 1,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, tick]);
+  }, [timings, tick, zonaOffsetMs]);
 
-  const selectCity = (next: string | null) => {
+  const selectCity = (next: MyQuranCity | null) => {
     setCity(next);
     setModalVisible(false);
     if (next === null) {
-      removeItem(StorageKeys.city);
+      removeItem(StorageKeys.cityV2);
     } else {
-      setString(StorageKeys.city, next);
+      setJSON(StorageKeys.cityV2, next);
     }
   };
+
+  const cityName = city ? titleCaseWords(city.lokasi) : t('jadwal.autoLocation');
 
   return (
     <Screen scroll refreshing={isRefetching} onRefresh={() => refetch()}>
@@ -539,23 +530,27 @@ export default function JadwalShalatScreen() {
       />
       {isPending ? <SkeletonList count={4} height={120} /> : null}
       {isError ? <ErrorState onRetry={() => refetch()} /> : null}
-      {data && schedule ? (
+      {data && timings && schedule ? (
         <>
           <HeroCard
             schedule={schedule}
-            cityName={city ? capitalize(city) : t('jadwal.autoLocation')}
+            cityName={cityName}
+            zonaOffsetMs={zonaOffsetMs}
             onExpire={handleExpire}
             onOpenCity={() => setModalVisible(true)}
           />
-          <Timeline schedule={schedule} timings={data.timings} />
-          <DateCard data={data} />
+          <Timeline schedule={schedule} timings={timings} />
+          <DateCard
+            gregorianText={data.jadwal.tanggal}
+            hijriText={zonaHijri(zonaOffsetMs)}
+          />
           <View style={styles.list}>
             {TIME_ITEMS.map((item, index) => (
               <TimeRow
                 key={item.key}
                 label={t(`jadwal.${item.label}`)}
                 icon={item.icon}
-                time={data.timings[item.key]}
+                time={timings[item.key]}
                 highlighted={schedule.key === item.key}
                 index={index}
               />
@@ -566,6 +561,8 @@ export default function JadwalShalatScreen() {
       <CityModal
         visible={modalVisible}
         current={city}
+        cities={citiesQuery.data ?? []}
+        citiesLoading={citiesQuery.isPending}
         onSelect={selectCity}
         onClose={() => setModalVisible(false)}
       />
@@ -573,20 +570,21 @@ export default function JadwalShalatScreen() {
   );
 }
 
-const makeStyles = (c: ThemeColors) =>
+const makeStyles = (c: ThemeColors, scheme: 'light' | 'dark') =>
   StyleSheet.create({
     hero: {
       alignItems: 'center',
-      borderRadius: radius.xl,
-      padding: spacing.xl,
+      borderRadius: radius.xl + 4,
+      paddingVertical: spacing.xl + 4,
+      paddingHorizontal: spacing.lg,
       overflow: 'hidden',
       ...shadow.card,
     },
     heroDeco: {
       position: 'absolute',
-      right: -24,
-      top: -20,
-      opacity: 0.08,
+      right: -34,
+      top: -30,
+      opacity: 0.1,
     },
     heroTop: {
       flexDirection: 'row',
@@ -598,33 +596,38 @@ const makeStyles = (c: ThemeColors) =>
     heroBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 5,
-      backgroundColor: c.primarySoft,
+      gap: 6,
+      backgroundColor: 'rgba(255,255,255,0.22)',
       borderRadius: radius.full,
       paddingHorizontal: 10,
-      paddingVertical: 4,
+      paddingVertical: 5,
+    },
+    heroBadgeDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: '#FFFFFF',
     },
     heroBadgeText: {
       fontFamily: font.bold,
-      fontSize: 10,
+      fontSize: 9.5,
       letterSpacing: 1.5,
-      color: c.white,
+      color: '#FFFFFF',
     },
     heroCity: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      backgroundColor: c.white,
+      backgroundColor: 'rgba(255,255,255,0.22)',
       borderRadius: radius.full,
       paddingLeft: 10,
       paddingRight: 8,
       paddingVertical: 5,
-      maxWidth: 160,
+      maxWidth: 170,
     },
     heroCityText: {
       fontFamily: font.semibold,
       fontSize: 11,
-      color: c.primaryDeep,
     },
     heroBody: {
       alignItems: 'center',
@@ -635,32 +638,29 @@ const makeStyles = (c: ThemeColors) =>
       fontFamily: font.extrabold,
       fontSize: 30,
       lineHeight: 36,
-      color: c.white,
     },
     heroTime: {
       fontFamily: font.semibold,
       fontSize: 16,
       letterSpacing: 1,
-      color: c.white,
-      opacity: 0.82,
+      opacity: 0.85,
       fontVariant: ['tabular-nums'],
     },
     heroClock: {
       fontFamily: font.extrabold,
-      fontSize: 48,
-      lineHeight: 58,
-      color: c.white,
+      fontSize: 52,
+      lineHeight: 62,
       marginTop: spacing.sm,
       fontVariant: ['tabular-nums'],
+      letterSpacing: 2,
     },
     heroClockSep: {
-      opacity: 0.5,
+      opacity: 0.45,
     },
     heroCaption: {
       fontFamily: font.regular,
       fontSize: 12,
-      color: c.white,
-      opacity: 0.7,
+      opacity: 0.78,
       marginTop: 2,
     },
     timelineWrap: {
@@ -673,9 +673,9 @@ const makeStyles = (c: ThemeColors) =>
     pill: {
       alignItems: 'center',
       gap: 4,
-      minWidth: 84,
+      minWidth: 88,
       paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
+      paddingVertical: spacing.md - 1,
       borderRadius: radius.lg,
       backgroundColor: c.surface,
       borderWidth: 1,
@@ -684,6 +684,7 @@ const makeStyles = (c: ThemeColors) =>
     pillActive: {
       borderColor: c.primary,
       backgroundColor: c.primarySoft,
+      borderWidth: 1.5,
     },
     pillLabel: {
       fontFamily: font.regular,
@@ -759,24 +760,27 @@ const makeStyles = (c: ThemeColors) =>
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: radius.lg,
+      borderRadius: radius.xl,
       paddingHorizontal: spacing.base,
-      paddingVertical: spacing.md,
+      paddingVertical: spacing.md + 2,
     },
     rowActive: {
       borderColor: c.primary,
       backgroundColor: c.primarySoft,
+      borderWidth: 1.5,
+      ...shadow.card,
     },
     rowIcon: {
-      width: 40,
-      height: 40,
-      borderRadius: radius.full,
+      width: 42,
+      height: 42,
+      borderRadius: 16,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: c.surfaceAlt,
     },
     rowIconActive: {
       backgroundColor: c.goldSoft,
+      borderRadius: 16,
     },
     rowTitleRow: {
       flex: 1,
@@ -803,11 +807,11 @@ const makeStyles = (c: ThemeColors) =>
       fontFamily: font.bold,
       fontSize: 9,
       letterSpacing: 1,
-      color: c.white,
+      color: scheme === 'dark' ? '#061009' : '#FFFFFF',
     },
     rowTime: {
       fontFamily: font.extrabold,
-      fontSize: 20,
+      fontSize: 21,
       color: c.text,
       fontVariant: ['tabular-nums'],
     },

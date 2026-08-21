@@ -187,6 +187,31 @@ export interface MyQuranTime {
   time: { hour: number; minute: number; second: number; full?: string };
 }
 
+export interface MyQuranCity {
+  id: string;
+  lokasi: string;
+}
+
+export interface MyQuranJadwalRaw {
+  tanggal: string;
+  imsak: string;
+  subuh: string;
+  terbit: string;
+  dhuha: string;
+  dzuhur: string;
+  ashar: string;
+  maghrib: string;
+  isya: string;
+  date: string;
+}
+
+export interface MyQuranJadwalData {
+  id: number | string;
+  lokasi: string;
+  daerah: string;
+  jadwal: MyQuranJadwalRaw;
+}
+
 /* ------------------------------ Simple JSON ------------------------------ */
 
 export interface AsmaulHusnaItem {

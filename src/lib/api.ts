@@ -24,6 +24,8 @@ import {
   MushafAyah,
   MushafData,
   MyQuranTime,
+  MyQuranCity,
+  MyQuranJadwalData,
 } from './types';
 
 const API_BASE = 'https://api.qalbun.my.id';
@@ -245,5 +247,26 @@ export async function getMyQuranTime(): Promise<MyQuranTime> {
     throw new Error('Gagal memuat waktu server.');
   }
   const json = (await res.json()) as { status: boolean; data: MyQuranTime };
+  return json.data;
+}
+
+export async function getMyQuranCities(): Promise<MyQuranCity[]> {
+  const res = await fetch(`${MYQURAN_BASE}/sholat/kota/semua`);
+  if (!res.ok) {
+    throw new Error('Gagal memuat daftar kota.');
+  }
+  const json = (await res.json()) as { status: boolean; data: MyQuranCity[] };
+  return json.data;
+}
+
+export async function getMyQuranJadwal(cityId: string, date: string): Promise<MyQuranJadwalData> {
+  const res = await fetch(`${MYQURAN_BASE}/sholat/jadwal/${cityId}/${date}`);
+  if (!res.ok) {
+    throw new Error('Gagal memuat jadwal shalat.');
+  }
+  const json = (await res.json()) as { status: boolean; data: MyQuranJadwalData };
+  if (!json.data?.jadwal) {
+    throw new Error('Jadwal shalat tidak tersedia untuk kota ini.');
+  }
   return json.data;
 }

@@ -1,11 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { getMyQuranTime } from './api';
-
-const ZONA_CITY: Record<string, string> = {
-  WIB: 'jakarta',
-  WITA: 'makassar',
-  WIT: 'jayapura',
-};
+import { AUTO_CITY_IDS } from './jadwal';
 
 const ZONA_FALLBACK_HOURS: Record<string, number> = {
   WIB: 7,
@@ -33,9 +28,9 @@ export function useZonaTime() {
 
   const bagian = query.data?.bagian ?? 'WIB';
   const zonaOffsetMs = parseZonaOffsetMs(query.data?.zona ?? '', bagian);
-  const zonaCity = ZONA_CITY[bagian] ?? 'jakarta';
+  const zonaCityId = AUTO_CITY_IDS[bagian] ?? AUTO_CITY_IDS.WIB;
 
-  return { bagian, zonaOffsetMs, zonaCity };
+  return { bagian, zonaOffsetMs, zonaCityId };
 }
 
 export function zonaSecondsOfDay(offsetMs: number): number {
