@@ -89,6 +89,8 @@ export default function MushafScreen() {
     retry: 1,
   });
 
+  const hasResolved = useRef(false);
+
   useEffect(() => {
     if (!data) return;
     let active = true;
@@ -101,6 +103,7 @@ export default function MushafScreen() {
       if (!Number.isNaN(surahParsed) && data.surahFirstPage[surahParsed]) {
         return data.surahFirstPage[surahParsed] - 1;
       }
+      if (hasResolved.current) return null;
       const saved = await getJSON<number>(LAST_PAGE_KEY);
       if (typeof saved === 'number' && saved >= 1 && saved <= data.pages.length) {
         return saved - 1;
@@ -108,14 +111,17 @@ export default function MushafScreen() {
       return null;
     };
     resolveTarget().then((target) => {
-      if (!active || target === null || target === currentPage) return;
+      if (!active || target === null) return;
+      hasResolved.current = true;
+      if (target === currentPage) return;
       setCurrentPage(target);
       listRef.current?.scrollToIndex({ index: target, animated: false });
     });
     return () => {
       active = false;
     };
-  }, [data, pageParam, surahParam, currentPage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, pageParam, surahParam]);
 
   useEffect(() => {
     setJSON(LAST_PAGE_KEY, currentPage + 1);
@@ -207,6 +213,16 @@ export default function MushafScreen() {
         renderItem={renderItem}
         getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
         initialScrollIndex={Math.min(currentPage, pages.length - 1)}
+        onScrollEndDrag={(event) => {
+          const velocity = event.nativeEvent.velocity;
+          if (!velocity || Math.abs(velocity.x) < 0.15) {
+            const next = Math.round(event.nativeEvent.contentOffset.x / width);
+            if (next !== currentPage && next >= 0 && next < pages.length) {
+              setCurrentPage(next);
+              setChromeVisible(false);
+            }
+          }
+        }}
         onMomentumScrollEnd={(event) => {
           const next = Math.round(event.nativeEvent.contentOffset.x / width);
           if (next !== currentPage && next >= 0 && next < pages.length) {
