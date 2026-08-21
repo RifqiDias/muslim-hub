@@ -16,7 +16,7 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "NPM_CONFIG_STRICT_DEP_BUILDS": "false"
+        "NODE_ENV": "production"
       },
       "android": {
         "buildType": "app-bundle"
