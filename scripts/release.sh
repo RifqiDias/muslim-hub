@@ -13,7 +13,7 @@
 #
 # Prasyarat:
 #   - .env berisi EXPO_PUBLIC_QALBUN_API_KEY
-#   - npx eas login sudah dilakukan (untuk fase build)
+#   - eas login sudah dilakukan (untuk fase build)
 #   - HP terhubung USB debugging (untuk fase screenshots)
 # ============================================================
 set -euo pipefail
@@ -36,11 +36,12 @@ preflight_env() {
   say "Preflight: environment"
   command -v node >/dev/null || die "node tidak ditemukan"
   command -v pnpm >/dev/null || die "pnpm tidak ditemukan (npm diketahui bermasalah di mesin ini)"
+  command -v eas >/dev/null || die "eas-cli belum terpasang/PATH — jalankan: pnpm add -g eas-cli (lalu buka ulang terminal)"
   [ -d node_modules ] || die "node_modules hilang — jalankan: pnpm install"
   [ -f .env ] || die ".env tidak ada — salin dari .env.example lalu isi EXPO_PUBLIC_QALBUN_API_KEY"
   grep -q '^EXPO_PUBLIC_QALBUN_API_KEY=..' .env || die "EXPO_PUBLIC_QALBUN_API_KEY kosong di .env"
   grep -q '^credentials/' .gitignore || die "credentials/ tidak di-gitignore!"
-  info "node $(node -v) · pnpm $(pnpm -v) · .env OK"
+  info "node $(node -v) · pnpm $(pnpm -v) · eas $(eas --version 2>/dev/null | cut -d/ -f2) · .env OK"
 }
 
 preflight_code() {
@@ -103,16 +104,16 @@ capture_screenshots() {
 
 build_aab() {
   say "Login check EAS"
-  npx eas whoami >/dev/null 2>&1 || die "belum login EAS — jalankan: npx eas login"
+  eas whoami >/dev/null 2>&1 || die "belum login EAS — jalankan: eas login"
 
   say "Pastikan upload keystore terdaftar (interaktif bila belum)"
   info "Jika diminta keystore: pilih 'I want to upload my own keystore'"
   info "  path   : credentials/muslim-hub-upload.jks"
   info "  alias  : muslimhub  (password di credentials/keystore.env)"
-  npx eas credentials -p android || true
+  eas credentials -p android || true
 
   say "Build AAB produksi (EAS cloud)"
-  npx eas build --platform android --profile production --non-interactive
+  eas build --platform android --profile production --non-interactive
   info "AAB selesai — URL unduh tampil di output EAS di atas"
 }
 
