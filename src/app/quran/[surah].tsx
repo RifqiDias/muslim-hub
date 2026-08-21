@@ -137,7 +137,7 @@ export default function SurahDetailScreen() {
             index={index}
             surahName={data.name}
             translationLang={translationLang}
-            transliteration={translitQuery.data?.get(item.number) ?? null}
+            transliteration={translitQuery.data?.[item.number] ?? null}
             latinVisible={latinVisible}
             tafsirText={data.tafsir?.id?.kemenag?.text?.[String(item.number)] ?? null}
           />

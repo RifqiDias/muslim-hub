@@ -85,15 +85,15 @@ export async function getSurahDetailJson(surah: number | string): Promise<QuranJ
 
 const ALQURANCLOUD_BASE = 'https://api.alquran.cloud/v1';
 
-export async function getSurahTransliteration(surah: number | string): Promise<Map<number, string>> {
+export async function getSurahTransliteration(surah: number | string): Promise<Record<number, string>> {
   const res = await fetch(`${ALQURANCLOUD_BASE}/surah/${surah}/en.transliteration`);
   if (!res.ok) {
     throw new Error('Gagal memuat transliterasi.');
   }
   const json = (await res.json()) as { code: number; data: AlQuranCloudSurah };
-  const map = new Map<number, string>();
+  const map: Record<number, string> = {};
   for (const ayah of json.data.ayahs) {
-    map.set(ayah.numberInSurah, ayah.text);
+    map[ayah.numberInSurah] = ayah.text;
   }
   return map;
 }
