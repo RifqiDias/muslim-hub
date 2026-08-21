@@ -61,7 +61,10 @@
       "reactCompiler": true
     },
     "extra": {
-      "apiKey": ""
+      "apiKey": "",
+      "eas": {
+        "projectId": "8d2ee670-201f-41e3-a835-8cf52c5b0d53"
+      }
     }
   }
 }
