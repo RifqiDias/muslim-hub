@@ -23,6 +23,7 @@ import {
   AlQuranCloudSurah,
   MushafAyah,
   MushafData,
+  MyQuranTime,
 } from './types';
 
 const API_BASE = 'https://api.qalbun.my.id';
@@ -234,4 +235,15 @@ export async function askQalbunAI(text: string): Promise<string> {
 
 export function getIqraPdfUrl(vol: number | string): string {
   return `${API_BASE}/api/data/pdf/iqra/${vol}?apikey=${API_KEY}`;
+}
+
+const MYQURAN_BASE = 'https://api.myquran.com/v2';
+
+export async function getMyQuranTime(): Promise<MyQuranTime> {
+  const res = await fetch(`${MYQURAN_BASE}/tools/time`);
+  if (!res.ok) {
+    throw new Error('Gagal memuat waktu server.');
+  }
+  const json = (await res.json()) as { status: boolean; data: MyQuranTime };
+  return json.data;
 }

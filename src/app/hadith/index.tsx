@@ -41,32 +41,37 @@ function BookCard({ item, index }: { item: HadithBook; index: number }) {
   const gradient = bookGradients[index % bookGradients.length];
 
   return (
-    <Animated.View entering={FadeInDown.springify().delay(index * 70)} style={styles.cardWrap}>
+    <Animated.View entering={FadeInDown.springify().delay(index * 70)}>
       <PressableScale
         onPress={() => router.push({ pathname: '/hadith/[kitab]', params: { kitab: item.id, name: item.name } })}
         style={styles.pressArea}
+        scaleTo={0.975}
       >
-        <LinearGradient
-          colors={[...gradient]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.card}
-        >
+        <View style={styles.card}>
+          <LinearGradient
+            colors={[...gradient]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.accent}
+          />
           <View
             style={[
               styles.iconWrap,
-              { backgroundColor: scheme === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.55)' },
+              { backgroundColor: scheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.6)' },
             ]}
           >
-            <Ionicons name="book" size={22} color={colors.gold} />
+            <Ionicons name="book" size={20} color={colors.gold} />
           </View>
-          <Text style={styles.cardTitle} numberOfLines={2}>
-            {item.name}
-          </Text>
-          <Text style={styles.cardCount}>
-            {t('hadithList.count', { count: item.available.toLocaleString(lang === 'en' ? 'en-US' : 'id-ID') })}
-          </Text>
-        </LinearGradient>
+          <View style={styles.textWrap}>
+            <Text style={styles.cardTitle} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text style={styles.cardCount}>
+              {t('hadithList.count', { count: item.available.toLocaleString(lang === 'en' ? 'en-US' : 'id-ID') })}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
+        </View>
       </PressableScale>
     </Animated.View>
   );
@@ -84,10 +89,10 @@ export default function HadithIndexScreen() {
   return (
     <Screen scroll>
       <PageHeader title={t('hadithList.title')} subtitle={t('hadithList.subtitle')} />
-      {isPending ? <SkeletonList count={6} height={158} /> : null}
+      {isPending ? <SkeletonList count={9} height={74} /> : null}
       {isError && !data ? <ErrorState onRetry={() => refetch()} /> : null}
       {data ? (
-        <View style={styles.grid}>
+        <View style={styles.list}>
           {data.map((item, index) => (
             <BookCard key={item.id} item={item} index={index} />
           ))}
@@ -99,43 +104,51 @@ export default function HadithIndexScreen() {
 
 const makeStyles = (c: ThemeColors) =>
   StyleSheet.create({
-    grid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
+    list: {
       gap: spacing.md,
-    },
-    cardWrap: {
-      width: '48.5%',
     },
     pressArea: {
       borderRadius: radius.lg,
     },
     card: {
-      padding: spacing.base,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      padding: spacing.md,
+      paddingLeft: spacing.base + 2,
       borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: c.border,
-      minHeight: 150,
+      backgroundColor: c.surface,
+      overflow: 'hidden',
+    },
+    accent: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 5,
     },
     iconWrap: {
       width: 44,
       height: 44,
-      borderRadius: 22,
+      borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: spacing.md,
+      marginLeft: spacing.xs,
+    },
+    textWrap: {
+      flex: 1,
     },
     cardTitle: {
       fontFamily: font.bold,
       fontSize: 15,
-      lineHeight: 20,
       color: c.text,
     },
     cardCount: {
       fontFamily: font.regular,
       fontSize: 12,
       color: c.textMuted,
-      marginTop: spacing.xs + 1,
+      marginTop: 2,
     },
   });

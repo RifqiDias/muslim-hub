@@ -179,6 +179,14 @@ export interface MushafData {
   surahNames: Record<number, string>;
 }
 
+export interface MyQuranTime {
+  timestamp: number;
+  zona: string;
+  bagian: string;
+  date?: Record<string, unknown>;
+  time: { hour: number; minute: number; second: number; full?: string };
+}
+
 /* ------------------------------ Simple JSON ------------------------------ */
 
 export interface AsmaulHusnaItem {
