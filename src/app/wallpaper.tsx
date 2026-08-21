@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import * as MediaLibrary from 'expo-media-library/legacy';
 import * as Sharing from 'expo-sharing';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -67,9 +66,14 @@ export default function WallpaperScreen() {
     setSavePct(0);
     try {
       const localUri = await downloadToDevice(url);
+      const MediaLibrary = await import('expo-media-library/legacy');
       const permission = await MediaLibrary.requestPermissionsAsync(true);
-      if (!permission.granted) {
-        showToast('Izin akses galeri ditolak');
+      if (!permission.granted || !permission.canAskAgain) {
+        await Sharing.shareAsync(localUri, {
+          mimeType: 'image/jpeg',
+          dialogTitle: 'Simpan Wallpaper Islami',
+        });
+        showToast('Disimpan melalui menu bagikan');
         return;
       }
       await MediaLibrary.saveToLibraryAsync(localUri);
