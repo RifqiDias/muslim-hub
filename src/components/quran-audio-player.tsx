@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { useAudioPlayerStatus } from 'expo-audio';
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { registerStrings, useLang } from '@/i18n';
+import { getMurottalPlayer, replaceMurottalSource } from '@/lib/murottal-player';
 import { getString, setString } from '@/lib/storage';
 import { QuranJsonReciter } from '@/lib/types';
 import { ThemeColors, font, radius, spacing, useTheme } from '@/theme';
@@ -53,9 +54,7 @@ export function QuranAudioPlayer({ recitations, surahLabel, style }: QuranAudioP
 
   const reciter = recitations[reciterIndex] ?? recitations[0];
 
-  const player = useAudioPlayer(
-    reciter ? { uri: reciter.audio_url } : { uri: '' },
-  );
+  const player = getMurottalPlayer();
   const status = useAudioPlayerStatus(player);
 
   useEffect(() => {
@@ -69,12 +68,6 @@ export function QuranAudioPlayer({ recitations, surahLabel, style }: QuranAudioP
       .catch(() => undefined);
   }, [recitations.length]);
 
-  useEffect(() => {
-    setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true }).catch(
-      () => undefined,
-    );
-  }, []);
-
   const selectReciter = (index: number) => {
     setReciterIndex(index);
     setPickerVisible(false);
@@ -84,7 +77,7 @@ export function QuranAudioPlayer({ recitations, surahLabel, style }: QuranAudioP
   useEffect(() => {
     const next = recitations[reciterIndex] ?? recitations[0];
     if (next) {
-      player.replace({ uri: next.audio_url });
+      replaceMurottalSource(player, next.audio_url);
     }
   }, [reciterIndex, player, recitations]);
 
