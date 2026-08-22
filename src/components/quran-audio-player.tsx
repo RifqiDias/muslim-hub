@@ -70,7 +70,9 @@ export function QuranAudioPlayer({ recitations, surahLabel, style }: QuranAudioP
   }, [recitations.length]);
 
   useEffect(() => {
-    setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
+    setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true }).catch(
+      () => undefined,
+    );
   }, []);
 
   const selectReciter = (index: number) => {
