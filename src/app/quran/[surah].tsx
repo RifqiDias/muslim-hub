@@ -50,7 +50,8 @@ export default function SurahDetailScreen() {
   const { colors, gradients } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const { surah } = useLocalSearchParams<{ surah: string }>();
+  const { surah, autoplay } = useLocalSearchParams<{ surah: string; autoplay?: string }>();
+  const autoPlayParam = autoplay;
   const surahParam = surah ?? '1';
   const [tafsirOpen, setTafsirOpen] = useState(false);
   const [translationLang, setTranslationLang] = useState<Lang>(lang);
@@ -191,6 +192,7 @@ export default function SurahDetailScreen() {
               <QuranAudioPlayer
                 recitations={data.recitations}
                 surahLabel={data.name}
+                autoPlay={autoPlayParam === '1'}
                 style={styles.audioCard}
               />
             ) : null}

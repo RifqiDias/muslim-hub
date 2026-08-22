@@ -41,10 +41,11 @@ function formatTime(seconds: number): string {
 interface QuranAudioPlayerProps {
   recitations: QuranJsonReciter[];
   surahLabel: string;
+  autoPlay?: boolean;
   style?: ViewStyle;
 }
 
-export function QuranAudioPlayer({ recitations, surahLabel, style }: QuranAudioPlayerProps) {
+export function QuranAudioPlayer({ recitations, surahLabel, autoPlay = false, style }: QuranAudioPlayerProps) {
   const { t } = useLang();
   const { colors, gradients, scheme } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -86,6 +87,47 @@ export function QuranAudioPlayer({ recitations, surahLabel, style }: QuranAudioP
   const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
   const primaryTextColor = scheme === 'dark' ? '#061009' : '#FFFFFF';
 
+  const togglePlayback = () => {
+    if (status?.playing) {
+      player.pause();
+      return;
+    }
+    player.setActiveForLockScreen(
+      true,
+      {
+        title: `${t('audio.murottal')} · ${surahLabel}`,
+        artist: reciter?.name,
+        albumTitle: 'Muslim Hub',
+      },
+      { showSeekForward: false, showSeekBackward: false },
+    );
+    player.play();
+  };
+
+  useEffect(() => {
+    if (status?.didJustFinish) {
+      player.setActiveForLockScreen(false);
+    }
+  }, [status?.didJustFinish, player]);
+
+  useEffect(() => {
+    if (!autoPlay) return;
+    const id = setTimeout(() => {
+      player.setActiveForLockScreen(
+        true,
+        {
+          title: `${t('audio.murottal')} · ${surahLabel}`,
+          artist: reciter?.name,
+          albumTitle: 'Muslim Hub',
+        },
+        { showSeekForward: false, showSeekBackward: false },
+      );
+      player.play();
+    }, 1500);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoPlay, player]);
+
   const statusLabel = status?.isLoaded
     ? status.playing
       ? t('audio.nowPlaying')
@@ -114,7 +156,7 @@ export function QuranAudioPlayer({ recitations, surahLabel, style }: QuranAudioP
               {statusLabel}
             </Text>
           </View>
-          <PressableScale onPress={() => (status?.playing ? player.pause() : player.play())} style={styles.playBtn}>
+          <PressableScale onPress={togglePlayback} style={styles.playBtn}>
             <Ionicons
               key={status?.playing ? 'pause' : 'play'}
               name={status?.playing ? 'pause' : 'play'}
