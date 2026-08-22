@@ -44,12 +44,16 @@ if [ -z "${EXPO_TOKEN:-}" ]; then
     say "Login EAS (untuk mengambil keystore)"
     eas login
   fi
-  say "Build lokal dimulai"
-  eas build --platform android --profile production --local --output "$OUT_AAB" --non-interactive
-else
-  say "Build lokal dimulai (EXPO_TOKEN tersedia)"
-  eas build --platform android --profile production --local --output "$OUT_AAB" --non-interactive
 fi
+
+LOCAL_PLUGIN="$(command -v eas-cli-local-build-plugin || echo "$HOME/Library/pnpm/bin/eas-cli-local-build-plugin")"
+if [ ! -x "$LOCAL_PLUGIN" ]; then
+  die "eas-cli-local-build-plugin tidak terpasang — jalankan: pnpm add -g eas-cli-local-build-plugin"
+fi
+export EAS_LOCAL_BUILD_PLUGIN_PATH="$LOCAL_PLUGIN"
+
+say "Build lokal dimulai"
+eas build --platform android --profile production --local --output "$OUT_AAB" --non-interactive
 
 say "Selesai"
 ls -lh "$OUT_AAB"
