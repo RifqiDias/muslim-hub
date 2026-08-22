@@ -6,7 +6,14 @@ import { Modal, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-nativ
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { registerStrings, useLang } from '@/i18n';
-import { getMurottalPlayer, getPlayingSurah, replaceMurottalSource, setPlayingSurah } from '@/lib/murottal-player';
+import {
+  activateMurottalLockScreen,
+  deactivateMurottalLockScreen,
+  getMurottalPlayer,
+  getPlayingSurah,
+  replaceMurottalSource,
+  setPlayingSurah,
+} from '@/lib/murottal-player';
 import { getString, setString } from '@/lib/storage';
 import { QuranJsonReciter } from '@/lib/types';
 import { ThemeColors, font, radius, spacing, useTheme } from '@/theme';
@@ -93,21 +100,17 @@ export function QuranAudioPlayer({ recitations, surahLabel, surahNumber, autoPla
       player.pause();
       return;
     }
-    player.setActiveForLockScreen(
-      true,
-      {
-        title: `${t('audio.murottal')} · ${surahLabel}`,
-        artist: reciter?.name,
-        albumTitle: 'Muslim Hub',
-      },
-      { showSeekForward: false, showSeekBackward: false },
-    );
+    activateMurottalLockScreen(player, {
+      title: `${t('audio.murottal')} · ${surahLabel}`,
+      artist: reciter?.name,
+      albumTitle: 'Muslim Hub',
+    });
     player.play();
   };
 
   useEffect(() => {
     if (status?.didJustFinish) {
-      player.setActiveForLockScreen(false);
+      deactivateMurottalLockScreen(player);
     }
   }, [status?.didJustFinish, player]);
 
@@ -132,15 +135,11 @@ export function QuranAudioPlayer({ recitations, surahLabel, surahNumber, autoPla
   useEffect(() => {
     if (!autoPlay) return;
     const id = setTimeout(() => {
-      player.setActiveForLockScreen(
-        true,
-        {
-          title: `${t('audio.murottal')} · ${surahLabel}`,
-          artist: reciter?.name,
-          albumTitle: 'Muslim Hub',
-        },
-        { showSeekForward: false, showSeekBackward: false },
-      );
+      activateMurottalLockScreen(player, {
+        title: `${t('audio.murottal')} · ${surahLabel}`,
+        artist: reciter?.name,
+        albumTitle: 'Muslim Hub',
+      });
       player.play();
     }, 1500);
     return () => clearTimeout(id);

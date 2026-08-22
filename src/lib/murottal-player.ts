@@ -1,4 +1,7 @@
+import Constants from 'expo-constants';
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
+
+const isExpoGo = Constants.executionEnvironment === 'storeClient';
 
 let player: AudioPlayer | null = null;
 let currentUrl: string | null = null;
@@ -15,9 +18,25 @@ export function getMurottalPlayer(): AudioPlayer {
   return player;
 }
 
+export function activateMurottalLockScreen(
+  target: AudioPlayer,
+  metadata: { title: string; artist?: string; albumTitle?: string },
+): void {
+  if (isExpoGo) return;
+  target.setActiveForLockScreen(true, metadata, {
+    showSeekForward: false,
+    showSeekBackward: false,
+  });
+}
+
+export function deactivateMurottalLockScreen(target: AudioPlayer): void {
+  if (isExpoGo) return;
+  target.setActiveForLockScreen(false);
+}
+
 export function replaceMurottalSource(target: AudioPlayer, url: string): void {
   if (currentUrl === url) return;
-  target.setActiveForLockScreen(false);
+  deactivateMurottalLockScreen(target);
   currentUrl = url;
   target.replace({ uri: url });
 }
