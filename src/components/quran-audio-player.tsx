@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAudioPlayerStatus } from 'expo-audio';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { PressableScale } from '@/components/ui/pressable-scale';
@@ -16,7 +16,7 @@ import {
 } from '@/lib/murottal-player';
 import { getString, setString } from '@/lib/storage';
 import { QuranJsonReciter } from '@/lib/types';
-import { ThemeColors, font, radius, spacing, useTheme } from '@/theme';
+import { ThemeColors, font, radius, shadow, spacing, useTheme } from '@/theme';
 
 registerStrings('audio', {
   reciter: 'Qari',
@@ -26,6 +26,10 @@ registerStrings('audio', {
   ready: 'Siap diputar',
   buffering: 'Memuat audio...',
   error: 'Audio gagal dimuat',
+  modeSurah: 'Per Surah',
+  modeAyah: 'Per Ayat',
+  verse: 'Ayat',
+  finished: 'Selesai',
 }, {
   reciter: 'Reciter',
   changeReciter: 'Change Reciter',
@@ -34,6 +38,10 @@ registerStrings('audio', {
   ready: 'Ready to play',
   buffering: 'Loading audio...',
   error: 'Failed to load audio',
+  modeSurah: 'Full surah',
+  modeAyah: 'Verse by verse',
+  verse: 'Verse',
+  finished: 'Finished',
 });
 
 const RECITER_KEY = 'muslimhub.quran.reciter';
@@ -45,21 +53,40 @@ function formatTime(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+export type MurottalMode = 'surah' | 'ayah';
+
 interface QuranAudioPlayerProps {
   recitations: QuranJsonReciter[];
   surahLabel: string;
   surahNumber: number;
+  totalVerses: number;
+  getAyahAudioUrl: (ayah: number) => string;
+  onPlayingAyahChange?: (ayah: number | null) => void;
   autoPlay?: boolean;
+  autoPlayMode?: MurottalMode;
   style?: ViewStyle;
 }
 
-export function QuranAudioPlayer({ recitations, surahLabel, surahNumber, autoPlay = false, style }: QuranAudioPlayerProps) {
+export function QuranAudioPlayer({
+  recitations,
+  surahLabel,
+  surahNumber,
+  totalVerses,
+  getAyahAudioUrl,
+  onPlayingAyahChange,
+  autoPlay = false,
+  autoPlayMode = 'surah',
+  style,
+}: QuranAudioPlayerProps) {
   const { t } = useLang();
   const { colors, gradients, scheme } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const styles = useMemo(() => makeStyles(colors, scheme), [colors, scheme]);
 
   const [reciterIndex, setReciterIndex] = useState(0);
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [mode, setMode] = useState<MurottalMode>(autoPlayMode);
+  const [currentAyah, setCurrentAyah] = useState<number | null>(null);
+  const currentAyahRef = useRef<number | null>(null);
 
   const reciter = recitations[reciterIndex] ?? recitations[0];
 
@@ -81,23 +108,110 @@ export function QuranAudioPlayer({ recitations, surahLabel, surahNumber, autoPla
     setReciterIndex(index);
     setPickerVisible(false);
     setString(RECITER_KEY, String(index)).catch(() => undefined);
+    if (mode === 'ayah' && currentAyahRef.current !== null && status?.playing) {
+      playAyah(currentAyahRef.current, index);
+    }
+  };
+
+  const surahUrl = reciter?.audio_url ?? '';
+
+  useEffect(() => {
+    if (mode !== 'surah') return;
+    if (surahUrl) {
+      replaceMurottalSource(player, surahUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, reciterIndex, surahUrl]);
+
+  const emitAyah = (value: number | null) => {
+    currentAyahRef.current = value;
+    setCurrentAyah(value);
+    onPlayingAyahChange?.(value);
+  };
+
+  const playAyah = (ayah: number, reciterIdx = reciterIndex) => {
+    const chosen = recitations[reciterIdx] ?? recitations[0];
+    emitAyah(ayah);
+    activateMurottalLockScreen(player, {
+      title: `${surahLabel} · ${t('audio.verse')} ${ayah}`,
+      artist: chosen?.name,
+      albumTitle: 'Muslim Hub',
+    });
+    player.replace({ uri: getAyahAudioUrl(ayah) });
+    player.play();
   };
 
   useEffect(() => {
-    const next = recitations[reciterIndex] ?? recitations[0];
-    if (next) {
-      replaceMurottalSource(player, next.audio_url);
+    if (!status?.didJustFinish) return;
+    if (mode === 'ayah') {
+      const at = currentAyahRef.current ?? 1;
+      if (at < totalVerses) {
+        const delay = setTimeout(() => playAyah(at + 1), 350);
+        return () => clearTimeout(delay);
+      }
+      emitAyah(null);
+      deactivateMurottalLockScreen(player);
+    } else {
+      deactivateMurottalLockScreen(player);
     }
-  }, [reciterIndex, player, recitations]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status?.didJustFinish, mode]);
 
-  const duration = status?.duration ?? 0;
-  const currentTime = status?.currentTime ?? 0;
-  const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
-  const primaryTextColor = scheme === 'dark' ? '#061009' : '#FFFFFF';
+  useEffect(() => {
+    if (!status) return;
+    if (status.playing) {
+      setPlayingSurah(surahNumber);
+    } else if (getPlayingSurah() === surahNumber && status?.didJustFinish) {
+      setPlayingSurah(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status?.playing, status?.didJustFinish, surahNumber]);
+
+  useEffect(() => {
+    return () => {
+      if (getPlayingSurah() === surahNumber) {
+        setPlayingSurah(null);
+      }
+      onPlayingAyahChange?.(null);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [surahNumber]);
+
+  useEffect(() => {
+    if (!autoPlay) return;
+    const id = setTimeout(() => {
+      if (mode === 'ayah') {
+        playAyah(1);
+      } else {
+        activateMurottalLockScreen(player, {
+          title: `${t('audio.murottal')} · ${surahLabel}`,
+          artist: reciter?.name,
+          albumTitle: 'Muslim Hub',
+        });
+        player.play();
+      }
+    }, 1500);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoPlay, player]);
+
+  const switchMode = (next: MurottalMode) => {
+    if (next === mode) return;
+    player.pause();
+    emitAyah(null);
+    setMode(next);
+    if (next === 'surah') {
+      replaceMurottalSource(player, surahUrl);
+    }
+  };
 
   const togglePlayback = () => {
     if (status?.playing) {
       player.pause();
+      return;
+    }
+    if (mode === 'ayah') {
+      playAyah(currentAyahRef.current ?? 1);
       return;
     }
     activateMurottalLockScreen(player, {
@@ -108,47 +222,16 @@ export function QuranAudioPlayer({ recitations, surahLabel, surahNumber, autoPla
     player.play();
   };
 
-  useEffect(() => {
-    if (status?.didJustFinish) {
-      deactivateMurottalLockScreen(player);
-    }
-  }, [status?.didJustFinish, player]);
-
-  useEffect(() => {
-    if (!status) return;
-    if (status.playing) {
-      setPlayingSurah(surahNumber);
-    } else if (getPlayingSurah() === surahNumber) {
-      setPlayingSurah(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status?.playing, surahNumber]);
-
-  useEffect(() => {
-    return () => {
-      if (getPlayingSurah() === surahNumber) {
-        setPlayingSurah(null);
-      }
-    };
-  }, [surahNumber]);
-
-  useEffect(() => {
-    if (!autoPlay) return;
-    const id = setTimeout(() => {
-      activateMurottalLockScreen(player, {
-        title: `${t('audio.murottal')} · ${surahLabel}`,
-        artist: reciter?.name,
-        albumTitle: 'Muslim Hub',
-      });
-      player.play();
-    }, 1500);
-    return () => clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoPlay, player]);
+  const duration = status?.duration ?? 0;
+  const currentTime = status?.currentTime ?? 0;
+  const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
+  const primaryTextColor = scheme === 'dark' ? '#061009' : '#FFFFFF';
 
   const statusLabel = status?.isLoaded
     ? status.playing
-      ? t('audio.nowPlaying')
+      ? mode === 'ayah' && currentAyah !== null
+        ? `${t('audio.nowPlaying')} · ${t('audio.verse')} ${currentAyah}/${totalVerses}`
+        : t('audio.nowPlaying')
       : t('audio.ready')
     : status?.error
       ? t('audio.error')
@@ -157,6 +240,20 @@ export function QuranAudioPlayer({ recitations, surahLabel, surahNumber, autoPla
   return (
     <View style={style}>
       <LinearGradient colors={[...gradients.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
+        <View style={styles.modeSwitchRow}>
+          {(['surah', 'ayah'] as MurottalMode[]).map((option) => {
+            const active = mode === option;
+            return (
+              <PressableScale key={option} onPress={() => switchMode(option)} haptic={false} style={styles.modePress}>
+                <View style={[styles.modeChip, active && styles.modeChipActive]}>
+                  <Text style={[styles.modeChipText, active && styles.modeChipTextActive]}>
+                    {option === 'surah' ? t('audio.modeSurah') : t('audio.modeAyah')}
+                  </Text>
+                </View>
+              </PressableScale>
+            );
+          })}
+        </View>
         <View style={styles.headerRow}>
           <View style={styles.titleWrap}>
             <Text style={[styles.kicker, { color: primaryTextColor }]}>
@@ -224,13 +321,44 @@ export function QuranAudioPlayer({ recitations, surahLabel, surahNumber, autoPla
   );
 }
 
-const makeStyles = (c: ThemeColors) =>
+const makeStyles = (c: ThemeColors, scheme: 'light' | 'dark') =>
   StyleSheet.create({
     card: {
       borderRadius: radius.xl,
       padding: spacing.lg,
       borderWidth: 1,
       borderColor: c.border,
+    },
+    modeSwitchRow: {
+      flexDirection: 'row',
+      alignSelf: 'center',
+      backgroundColor: 'rgba(0,0,0,0.18)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.22)',
+      borderRadius: radius.full,
+      padding: 4,
+      marginBottom: spacing.md,
+      gap: 4,
+    },
+    modePress: {
+      borderRadius: radius.full,
+    },
+    modeChip: {
+      paddingHorizontal: spacing.md + 2,
+      paddingVertical: 6,
+      borderRadius: radius.full,
+    },
+    modeChipActive: {
+      backgroundColor: '#FFFFFF',
+      ...shadow.card,
+    },
+    modeChipText: {
+      fontFamily: font.semibold,
+      fontSize: 11.5,
+      color: 'rgba(255,255,255,0.78)',
+    },
+    modeChipTextActive: {
+      color: scheme === 'dark' ? '#061009' : '#0B5A45',
     },
     headerRow: {
       flexDirection: 'row',

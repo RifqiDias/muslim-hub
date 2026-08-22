@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { shareText } from '@/components/quran-share';
@@ -15,7 +15,7 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { SkeletonList } from '@/components/ui/skeleton';
 import { registerStrings, useLang, type Lang } from '@/i18n';
-import { getSurahDetailJson, getSurahTransliteration } from '@/lib/api';
+import { getSurahDetailJson, getSurahListJson, getSurahTransliteration } from '@/lib/api';
 import { getString, setJSON, setString, StorageKeys } from '@/lib/storage';
 import { QuranJsonVerse } from '@/lib/types';
 import { ThemeColors, font, radius, spacing, useTheme } from '@/theme';
@@ -45,17 +45,29 @@ registerStrings('surahDetail', {
 const TRANSLATION_KEY = 'muslimhub.quran.translation';
 const LATIN_KEY = 'muslimhub.quran.latin';
 
+const AYAH_EDITION_FALLBACK = ['ar.alafasy', 'ar.abdurrahmaansudais', 'ar.shaatree'];
+
+function ayahEditionFor(reciterName: string, index: number): string {
+  if (/afasy|afaasee/i.test(reciterName)) return 'ar.alafasy';
+  if (/sudais/i.test(reciterName)) return 'ar.abdurrahmaansudais';
+  if (/ghamdi|ghaamidi/i.test(reciterName)) return 'ar.shaatree';
+  return AYAH_EDITION_FALLBACK[index % AYAH_EDITION_FALLBACK.length];
+}
+
 export default function SurahDetailScreen() {
   const { t, lang } = useLang();
   const { colors, gradients } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const listRef = useRef<FlatList>(null);
 
-  const { surah, autoplay } = useLocalSearchParams<{ surah: string; autoplay?: string }>();
+  const { surah, autoplay, mode: modeParam } = useLocalSearchParams<{ surah: string; autoplay?: string; mode?: string }>();
   const autoPlayParam = autoplay;
+  const autoPlayModeParam = modeParam === 'ayah' ? 'ayah' : 'surah';
   const surahParam = surah ?? '1';
   const [tafsirOpen, setTafsirOpen] = useState(false);
   const [translationLang, setTranslationLang] = useState<Lang>(lang);
   const [latinVisible, setLatinVisible] = useState(true);
+  const [playingAyah, setPlayingAyah] = useState<number | null>(null);
 
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['quranjson-surah', surahParam],
@@ -63,6 +75,49 @@ export default function SurahDetailScreen() {
     staleTime: Infinity,
     gcTime: Infinity,
   });
+
+  const surahListQuery = useQuery({
+    queryKey: ['quranjson-list'],
+    queryFn: getSurahListJson,
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
+
+  const ayahOffsets = useMemo(() => {
+    const list = surahListQuery.data;
+    if (!list) return null;
+    const offsets: Record<number, number> = {};
+    let acc = 0;
+    for (const item of list) {
+      offsets[item.number_of_surah] = acc;
+      acc += item.number_of_ayah;
+    }
+    return offsets;
+  }, [surahListQuery.data]);
+
+  const getAyahAudioUrl = useCallback(
+    (ayah: number) => {
+      const surahNum = data?.number_of_surah ?? 1;
+      const reciterName = data?.recitations?.[0]?.name ?? '';
+      const edition = ayahEditionFor(reciterName, 0);
+      const global = (ayahOffsets?.[surahNum] ?? 0) + ayah;
+      return `https://cdn.islamic.network/quran/audio/128/${edition}/${global}.mp3`;
+    },
+    [ayahOffsets, data],
+  );
+
+  useEffect(() => {
+    if (playingAyah === null || !data) return;
+    try {
+      listRef.current?.scrollToIndex({
+        index: playingAyah - 1,
+        viewPosition: 0.35,
+        animated: true,
+      });
+    } catch {
+      // index belum ter-render — biarkan scroll manual
+    }
+  }, [playingAyah, data]);
 
   const translitQuery = useQuery({
     queryKey: ['quranjson-translit', surahParam],
@@ -129,6 +184,7 @@ export default function SurahDetailScreen() {
   return (
     <Screen contentStyle={styles.screenContent}>
       <FlatList
+        ref={listRef}
         style={styles.list}
         data={data.verses}
         keyExtractor={(verse) => String(verse.number)}
@@ -140,6 +196,7 @@ export default function SurahDetailScreen() {
             translationLang={translationLang}
             transliteration={translitQuery.data?.[item.number] ?? null}
             latinVisible={latinVisible}
+            isPlaying={playingAyah === item.number}
             tafsirText={data.tafsir?.id?.kemenag?.text?.[String(item.number)] ?? null}
           />
         )}
@@ -193,7 +250,11 @@ export default function SurahDetailScreen() {
                 recitations={data.recitations}
                 surahLabel={data.name}
                 surahNumber={data.number_of_surah}
+                totalVerses={data.verses.length}
+                getAyahAudioUrl={getAyahAudioUrl}
+                onPlayingAyahChange={setPlayingAyah}
                 autoPlay={autoPlayParam === '1'}
+                autoPlayMode={autoPlayModeParam}
                 style={styles.audioCard}
               />
             ) : null}
@@ -270,6 +331,7 @@ function VerseCard({
   translationLang,
   transliteration,
   latinVisible,
+  isPlaying,
   tafsirText,
 }: {
   verse: QuranJsonVerse;
@@ -278,6 +340,7 @@ function VerseCard({
   translationLang: Lang;
   transliteration: string | null;
   latinVisible: boolean;
+  isPlaying?: boolean;
   tafsirText: string | null;
 }) {
   const { t } = useLang();
@@ -301,10 +364,19 @@ function VerseCard({
   };
 
   return (
-    <Animated.View entering={FadeInDown.duration(350).delay(Math.min(index, 10) * 50)} style={styles.verseCard}>
+    <Animated.View
+      entering={FadeInDown.duration(350).delay(Math.min(index, 10) * 50)}
+      style={[styles.verseCard, isPlaying && styles.verseCardPlaying]}
+    >
       <View style={styles.verseHeader}>
-        <View style={styles.verseBadge}>
-          <Text style={styles.verseBadgeText}>{verse.number}</Text>
+        <View style={[styles.verseBadge, isPlaying && styles.verseBadgePlaying]}>
+          {isPlaying ? (
+            <Animated.View entering={ZoomIn.springify().duration(300)}>
+              <Ionicons name="volume-high" size={15} color={colors.white} />
+            </Animated.View>
+          ) : (
+            <Text style={styles.verseBadgeText}>{verse.number}</Text>
+          )}
         </View>
         <View style={styles.verseActions}>
           {tafsirText ? (
@@ -506,6 +578,15 @@ const makeStyles = (c: ThemeColors) =>
       borderRadius: radius.xl,
       padding: spacing.lg,
       gap: spacing.sm,
+    },
+    verseCardPlaying: {
+      borderColor: c.primary,
+      borderWidth: 1.5,
+      backgroundColor: c.primarySoft,
+    },
+    verseBadgePlaying: {
+      borderColor: c.primary,
+      backgroundColor: c.primary,
     },
     verseHeader: {
       flexDirection: 'row',
