@@ -45,6 +45,16 @@ export function getMurottalCurrentUrl(): string | null {
   return currentUrl;
 }
 
+let activeSurah: number | null = null;
+
+export function setActiveSurah(value: number | null): void {
+  activeSurah = value;
+}
+
+export function getActiveSurah(): number | null {
+  return activeSurah;
+}
+
 let playingSurah: number | null = null;
 const playingListeners = new Set<() => void>();
 

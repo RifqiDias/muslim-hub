@@ -9,9 +9,11 @@ import { registerStrings, useLang } from '@/i18n';
 import {
   activateMurottalLockScreen,
   deactivateMurottalLockScreen,
+  getActiveSurah,
+  getMurottalCurrentUrl,
   getMurottalPlayer,
   getPlayingSurah,
-  replaceMurottalSource,
+  setActiveSurah,
   setPlayingSurah,
 } from '@/lib/murottal-player';
 import { getString, setString } from '@/lib/storage';
@@ -108,20 +110,26 @@ export function QuranAudioPlayer({
     setReciterIndex(index);
     setPickerVisible(false);
     setString(RECITER_KEY, String(index)).catch(() => undefined);
-    if (mode === 'ayah' && currentAyahRef.current !== null && status?.playing) {
-      playAyah(currentAyahRef.current, index);
+    const here = getActiveSurah() === surahNumber && status?.playing;
+    if (!here) return;
+    if (mode === 'ayah') {
+      if (currentAyahRef.current !== null) playAyah(currentAyahRef.current, index);
+    } else {
+      const next = recitations[index];
+      if (next) {
+        deactivateMurottalLockScreen(player);
+        player.replace({ uri: next.audio_url });
+        activateMurottalLockScreen(player, {
+          title: `${t('audio.murottal')} · ${surahLabel}`,
+          artist: next.name,
+          albumTitle: 'Muslim Hub',
+        });
+        player.play();
+      }
     }
   };
 
-  const surahUrl = reciter?.audio_url ?? '';
-
-  useEffect(() => {
-    if (mode !== 'surah') return;
-    if (surahUrl) {
-      replaceMurottalSource(player, surahUrl);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, reciterIndex, surahUrl]);
+  const sourceHere = getActiveSurah() === surahNumber;
 
   const emitAyah = (value: number | null) => {
     currentAyahRef.current = value;
@@ -132,6 +140,7 @@ export function QuranAudioPlayer({
   const playAyah = (ayah: number, reciterIdx = reciterIndex) => {
     const chosen = recitations[reciterIdx] ?? recitations[0];
     emitAyah(ayah);
+    setActiveSurah(surahNumber);
     activateMurottalLockScreen(player, {
       title: `${surahLabel} · ${t('audio.verse')} ${ayah}`,
       artist: chosen?.name,
@@ -141,8 +150,24 @@ export function QuranAudioPlayer({
     player.play();
   };
 
+  const playSurahAudio = () => {
+    const next = recitations[reciterIndex] ?? recitations[0];
+    if (!next) return;
+    setActiveSurah(surahNumber);
+    if (getMurottalCurrentUrl() !== next.audio_url) {
+      deactivateMurottalLockScreen(player);
+      player.replace({ uri: next.audio_url });
+    }
+    activateMurottalLockScreen(player, {
+      title: `${t('audio.murottal')} · ${surahLabel}`,
+      artist: next.name,
+      albumTitle: 'Muslim Hub',
+    });
+    player.play();
+  };
+
   useEffect(() => {
-    if (!status?.didJustFinish) return;
+    if (!status?.didJustFinish || getActiveSurah() !== surahNumber) return;
     if (mode === 'ayah') {
       const at = currentAyahRef.current ?? 1;
       if (at < totalVerses) {
@@ -150,32 +175,24 @@ export function QuranAudioPlayer({
         return () => clearTimeout(delay);
       }
       emitAyah(null);
+      setPlayingSurah(null);
       deactivateMurottalLockScreen(player);
     } else {
+      setPlayingSurah(null);
       deactivateMurottalLockScreen(player);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status?.didJustFinish, mode]);
+  }, [status?.didJustFinish, mode, surahNumber]);
 
   useEffect(() => {
-    if (!status) return;
+    if (!status || getActiveSurah() !== surahNumber) return;
     if (status.playing) {
       setPlayingSurah(surahNumber);
-    } else if (getPlayingSurah() === surahNumber && status?.didJustFinish) {
+    } else if (!status.playing && getPlayingSurah() === surahNumber && status.didJustFinish) {
       setPlayingSurah(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status?.playing, status?.didJustFinish, surahNumber]);
-
-  useEffect(() => {
-    return () => {
-      if (getPlayingSurah() === surahNumber) {
-        setPlayingSurah(null);
-      }
-      onPlayingAyahChange?.(null);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [surahNumber]);
 
   useEffect(() => {
     if (!autoPlay) return;
@@ -183,12 +200,7 @@ export function QuranAudioPlayer({
       if (mode === 'ayah') {
         playAyah(1);
       } else {
-        activateMurottalLockScreen(player, {
-          title: `${t('audio.murottal')} · ${surahLabel}`,
-          artist: reciter?.name,
-          albumTitle: 'Muslim Hub',
-        });
-        player.play();
+        playSurahAudio();
       }
     }, 1500);
     return () => clearTimeout(id);
@@ -197,16 +209,15 @@ export function QuranAudioPlayer({
 
   const switchMode = (next: MurottalMode) => {
     if (next === mode) return;
-    player.pause();
+    if (sourceHere && status?.playing) {
+      player.pause();
+    }
     emitAyah(null);
     setMode(next);
-    if (next === 'surah') {
-      replaceMurottalSource(player, surahUrl);
-    }
   };
 
   const togglePlayback = () => {
-    if (status?.playing) {
+    if (sourceHere && status?.playing) {
       player.pause();
       return;
     }
@@ -214,28 +225,26 @@ export function QuranAudioPlayer({
       playAyah(currentAyahRef.current ?? 1);
       return;
     }
-    activateMurottalLockScreen(player, {
-      title: `${t('audio.murottal')} · ${surahLabel}`,
-      artist: reciter?.name,
-      albumTitle: 'Muslim Hub',
-    });
-    player.play();
+    playSurahAudio();
   };
 
-  const duration = status?.duration ?? 0;
-  const currentTime = status?.currentTime ?? 0;
+  const showStatus = sourceHere && status?.isLoaded;
+  const duration = showStatus ? (status?.duration ?? 0) : 0;
+  const currentTime = showStatus ? (status?.currentTime ?? 0) : 0;
   const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
   const primaryTextColor = scheme === 'dark' ? '#061009' : '#FFFFFF';
 
-  const statusLabel = status?.isLoaded
-    ? status.playing
-      ? mode === 'ayah' && currentAyah !== null
-        ? `${t('audio.nowPlaying')} · ${t('audio.verse')} ${currentAyah}/${totalVerses}`
-        : t('audio.nowPlaying')
-      : t('audio.ready')
-    : status?.error
-      ? t('audio.error')
-      : t('audio.buffering');
+  const statusLabel = !sourceHere
+    ? t('audio.ready')
+    : status?.isLoaded
+      ? status.playing
+        ? mode === 'ayah' && currentAyah !== null
+          ? `${t('audio.nowPlaying')} · ${t('audio.verse')} ${currentAyah}/${totalVerses}`
+          : t('audio.nowPlaying')
+        : t('audio.ready')
+      : status?.error
+        ? t('audio.error')
+        : t('audio.buffering');
 
   return (
     <View style={style}>
@@ -273,8 +282,8 @@ export function QuranAudioPlayer({
           </View>
           <PressableScale onPress={togglePlayback} style={styles.playBtn}>
             <Ionicons
-              key={status?.playing ? 'pause' : 'play'}
-              name={status?.playing ? 'pause' : 'play'}
+              key={sourceHere && status?.playing ? 'pause' : 'play'}
+              name={sourceHere && status?.playing ? 'pause' : 'play'}
               size={26}
               color={primaryTextColor}
             />
