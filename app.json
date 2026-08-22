@@ -35,6 +35,14 @@
     "plugins": [
       "expo-router",
       [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": true,
+          "recordAudioAndroid": false,
+          "microphonePermission": false
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#0A1512",
@@ -54,7 +62,14 @@
           "savePhotosPermission": "Muslim Hub meminta izin untuk menyimpan wallpaper islami ke galeri Anda."
         }
       ],
-      "expo-audio"
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": true,
+          "recordAudioAndroid": false,
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
