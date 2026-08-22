@@ -25,3 +25,22 @@ export function replaceMurottalSource(target: AudioPlayer, url: string): void {
 export function getMurottalCurrentUrl(): string | null {
   return currentUrl;
 }
+
+let playingSurah: number | null = null;
+const playingListeners = new Set<() => void>();
+
+export function setPlayingSurah(value: number | null): void {
+  playingSurah = value;
+  playingListeners.forEach((listener) => listener());
+}
+
+export function subscribePlayingSurah(listener: () => void): () => void {
+  playingListeners.add(listener);
+  return () => {
+    playingListeners.delete(listener);
+  };
+}
+
+export function getPlayingSurah(): number | null {
+  return playingSurah;
+}

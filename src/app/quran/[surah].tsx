@@ -192,6 +192,7 @@ export default function SurahDetailScreen() {
               <QuranAudioPlayer
                 recitations={data.recitations}
                 surahLabel={data.name}
+                surahNumber={data.number_of_surah}
                 autoPlay={autoPlayParam === '1'}
                 style={styles.audioCard}
               />

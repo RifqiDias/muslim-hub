@@ -6,7 +6,7 @@ import { Modal, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-nativ
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { registerStrings, useLang } from '@/i18n';
-import { getMurottalPlayer, replaceMurottalSource } from '@/lib/murottal-player';
+import { getMurottalPlayer, getPlayingSurah, replaceMurottalSource, setPlayingSurah } from '@/lib/murottal-player';
 import { getString, setString } from '@/lib/storage';
 import { QuranJsonReciter } from '@/lib/types';
 import { ThemeColors, font, radius, spacing, useTheme } from '@/theme';
@@ -41,11 +41,12 @@ function formatTime(seconds: number): string {
 interface QuranAudioPlayerProps {
   recitations: QuranJsonReciter[];
   surahLabel: string;
+  surahNumber: number;
   autoPlay?: boolean;
   style?: ViewStyle;
 }
 
-export function QuranAudioPlayer({ recitations, surahLabel, autoPlay = false, style }: QuranAudioPlayerProps) {
+export function QuranAudioPlayer({ recitations, surahLabel, surahNumber, autoPlay = false, style }: QuranAudioPlayerProps) {
   const { t } = useLang();
   const { colors, gradients, scheme } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -109,6 +110,24 @@ export function QuranAudioPlayer({ recitations, surahLabel, autoPlay = false, st
       player.setActiveForLockScreen(false);
     }
   }, [status?.didJustFinish, player]);
+
+  useEffect(() => {
+    if (!status) return;
+    if (status.playing) {
+      setPlayingSurah(surahNumber);
+    } else if (getPlayingSurah() === surahNumber) {
+      setPlayingSurah(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status?.playing, surahNumber]);
+
+  useEffect(() => {
+    return () => {
+      if (getPlayingSurah() === surahNumber) {
+        setPlayingSurah(null);
+      }
+    };
+  }, [surahNumber]);
 
   useEffect(() => {
     if (!autoPlay) return;

@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { ArabicText } from '@/components/ui/arabic-text';
 import { ErrorState } from '@/components/ui/error-state';
 import { PageHeader } from '@/components/ui/page-header';
@@ -14,6 +14,7 @@ import { SkeletonList } from '@/components/ui/skeleton';
 import { registerStrings, useLang } from '@/i18n';
 import { getSurahListJson } from '@/lib/api';
 import { getJSON, StorageKeys } from '@/lib/storage';
+import { getPlayingSurah, subscribePlayingSurah } from '@/lib/murottal-player';
 import { QuranJsonSurah } from '@/lib/types';
 import { ThemeColors, font, radius, spacing, useTheme } from '@/theme';
 
@@ -26,7 +27,7 @@ registerStrings('quranList', {
   madaniyah: 'Madaniyah',
   notFound: 'Tidak ditemukan',
   notFoundHint: 'Tidak ada surah yang cocok dengan pencarian Anda.',
-  mushaf: 'Mode Mushaf',
+  playing: 'Sedang diputar...',
 }, {
   title: "The Qur'an",
   subtitle: '114 Surahs · Translation & Tafsir',
@@ -36,6 +37,7 @@ registerStrings('quranList', {
   madaniyah: 'Madaniyah',
   notFound: 'Not found',
   notFoundHint: 'No surah matches your search.',
+  playing: 'Now playing...',
   mushaf: 'Mushaf Mode',
 });
 
@@ -165,8 +167,11 @@ function SurahRow({
   meaning: string;
   versesLabel: string;
 }) {
+  const { t } = useLang();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const playingSurah = useSyncExternalStore(subscribePlayingSurah, getPlayingSurah);
+  const isPlaying = playingSurah === item.number_of_surah;
 
   return (
     <Animated.View entering={FadeInDown.springify().delay(Math.min(index, 12) * 40)}>
@@ -177,17 +182,25 @@ function SurahRow({
         style={styles.rowPress}
         scaleTo={0.98}
       >
-        <View style={styles.row}>
-          <Text style={styles.numberText}>{item.number_of_surah}</Text>
+        <View style={[styles.row, isPlaying && styles.rowPlaying]}>
+          <View style={styles.numberSlot}>
+            {isPlaying ? (
+              <Animated.View entering={ZoomIn.springify().duration(300)}>
+                <Ionicons name="volume-high" size={16} color={colors.primary} />
+              </Animated.View>
+            ) : (
+              <Text style={styles.numberText}>{item.number_of_surah}</Text>
+            )}
+          </View>
           <View style={styles.rowTexts}>
-            <Text style={styles.name} numberOfLines={1}>
+            <Text style={[styles.name, isPlaying && styles.namePlaying]} numberOfLines={1}>
               {item.name}
             </Text>
             <Text style={styles.meta} numberOfLines={1}>
-              {meaning} · {versesLabel}
+              {isPlaying ? t('quranList.playing') : `${meaning} · ${versesLabel}`}
             </Text>
           </View>
-          <ArabicText size={18} color={colors.gold} numberOfLines={1}>
+          <ArabicText size={18} color={isPlaying ? colors.primary : colors.gold} numberOfLines={1}>
             {item.name_translations.ar}
           </ArabicText>
         </View>
@@ -291,12 +304,21 @@ const makeStyles = (c: ThemeColors) =>
       alignItems: 'center',
       gap: spacing.md,
       paddingVertical: 12,
-      paddingHorizontal: 0,
+      paddingHorizontal: 8,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: c.border,
     },
-    numberText: {
+    rowPlaying: {
+      backgroundColor: c.primarySoft,
+      borderRadius: radius.md,
+      borderBottomColor: 'transparent',
+    },
+    numberSlot: {
       width: 26,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    numberText: {
       textAlign: 'center',
       fontFamily: font.semibold,
       fontSize: 12.5,
@@ -310,6 +332,9 @@ const makeStyles = (c: ThemeColors) =>
       fontFamily: font.semibold,
       fontSize: 15,
       color: c.text,
+    },
+    namePlaying: {
+      color: c.primary,
     },
     meta: {
       fontFamily: font.regular,
