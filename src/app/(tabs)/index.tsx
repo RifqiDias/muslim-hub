@@ -13,9 +13,11 @@ import { Screen } from '@/components/ui/screen';
 import { SectionHeader } from '@/components/ui/section-header';
 import { SkeletonBlock } from '@/components/ui/skeleton';
 import { registerStrings, useLang, type I18n } from '@/i18n';
-import { getDoaPilihan, getPrayerTimes } from '@/lib/api';
-import { getString, StorageKeys } from '@/lib/storage';
-import { PrayerTimings } from '@/lib/types';
+import { getDoaPilihan, getMyQuranJadwal } from '@/lib/api';
+import { mapTimings, Timings, zonaDate, zonaHijri } from '@/lib/jadwal';
+import { useZonaTime, zonaMinutesOfDay } from '@/lib/use-zona-time';
+import { getJSON, StorageKeys } from '@/lib/storage';
+import { MyQuranCity } from '@/lib/types';
 import { ThemeColors, font, radius, spacing, useTheme } from '@/theme';
 
 registerStrings('home', {
@@ -92,7 +94,7 @@ registerStrings('home', {
   menuAllSub: 'Browse all features',
 });
 
-const PRAYER_ORDER: { key: keyof PrayerTimings; labelPath: string }[] = [
+const PRAYER_ORDER: { key: keyof Timings; labelPath: string }[] = [
   { key: 'Fajr', labelPath: 'home.prayerFajr' },
   { key: 'Dhuhr', labelPath: 'home.prayerDhuhr' },
   { key: 'Asr', labelPath: 'home.prayerAsr' },
@@ -174,47 +176,66 @@ export default function BerandaScreen() {
   const { t, lang } = useLang();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const [city, setCity] = useState<string | null>(null);
-  const [now, setNow] = useState(() => new Date());
+  const { zonaOffsetMs, zonaCityId } = useZonaTime();
+  const [city, setCity] = useState<MyQuranCity | null>(null);
+  const [cityLoaded, setCityLoaded] = useState(false);
+  const [tick, setTick] = useState(0);
   const [dayIndex] = useState(() => Math.floor(Date.now() / 86400000));
 
   useEffect(() => {
-    getString(StorageKeys.city)
-      .then((value) => setCity(value))
-      .catch(() => undefined);
+    let active = true;
+    getJSON<MyQuranCity>(StorageKeys.cityV2).then((stored) => {
+      if (!active) return;
+      setCity(stored);
+      setCityLoaded(true);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 30000);
+    const timer = setInterval(() => setTick((value) => value + 1), 30000);
     return () => clearInterval(timer);
   }, []);
 
+  const effectiveCityId = city?.id ?? zonaCityId;
+  const dateKey = zonaDate(zonaOffsetMs).toISOString().slice(0, 10);
+
   const prayerQuery = useQuery({
-    queryKey: ['prayer-times', city ?? null],
-    queryFn: () => getPrayerTimes({ city: city ?? undefined }),
+    queryKey: ['myquran-jadwal', effectiveCityId, dateKey],
+    queryFn: () => getMyQuranJadwal(effectiveCityId, dateKey),
+    enabled: cityLoaded,
+    staleTime: 1000 * 60 * 30,
   });
 
   const doaQuery = useQuery({ queryKey: ['doa-pilihan'], queryFn: getDoaPilihan });
 
+  const minutesNow = zonaMinutesOfDay(zonaOffsetMs);
+  const zonaHour = Math.floor(minutesNow / 60);
+
   const greeting = useMemo(() => {
-    const hour = now.getHours();
-    if (hour >= 4 && hour < 11) return t('home.morning');
-    if (hour >= 11 && hour < 15) return t('home.afternoon');
-    if (hour >= 15 && hour < 18) return t('home.evening');
+    if (zonaHour >= 4 && zonaHour < 11) return t('home.morning');
+    if (zonaHour >= 11 && zonaHour < 15) return t('home.afternoon');
+    if (zonaHour >= 15 && zonaHour < 18) return t('home.evening');
     return t('home.night');
-  }, [now, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zonaHour, t, tick]);
 
-  const gregorianText = now.toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-US', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  const gregorianText = useMemo(() => {
+    const shifted = zonaDate(zonaOffsetMs);
+    const asUtc = Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate());
+    return new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'id-ID', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(new Date(asUtc));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, tick, dateKey]);
 
-  const hijri = prayerQuery.data?.date?.hijri;
-  const hijriText = hijri
-    ? [hijri.day, hijri.month?.en, hijri.year ? `${hijri.year} H` : null].filter(Boolean).join(' ')
-    : null;
+  const hijriText = zonaHijri(zonaOffsetMs);
 
   const doaHariIni =
     doaQuery.data && doaQuery.data.length > 0
@@ -222,9 +243,9 @@ export default function BerandaScreen() {
       : null;
 
   const nextPrayer = (() => {
-    const timings = prayerQuery.data?.timings;
-    if (!timings) return null;
-    const minutesNow = now.getHours() * 60 + now.getMinutes();
+    const raw = prayerQuery.data?.jadwal;
+    if (!raw) return null;
+    const timings = mapTimings(raw);
     for (const prayer of PRAYER_ORDER) {
       const parsed = parseHM(timings[prayer.key]);
       if (parsed !== null && parsed > minutesNow) {
