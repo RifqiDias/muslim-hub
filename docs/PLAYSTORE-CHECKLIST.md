@@ -58,8 +58,8 @@ Rekomendasi 8 screenshot: beranda, detail surah (ayat), jadwal shalat + countdow
 
 ## 5. Kategori, tag & kontak
 
-- **Kategori**: `Lifestyle` (paling umum untuk app islami; alternatif `Books & Reference`) — tidak ada kategori "Religi" di Play.
-- **Tag**: maks 5 (pilih yang relevan: Quran, Prayer, dll dari daftar suggested tags).
+- **Kategori**: `Books & Reference` (mapping dari tag Religious text — paling akurat untuk mushaf/terjemahan/hadits) — alternatif `Lifestyle`.
+- **Tag**: pilih **Religious text** (utama); tambahan opsional: Education, Lifestyle — maks 5 dari daftar saran.
 - **Kontak**: **email wajib**; telepon opsional; website opsional tapi disarankan.
 
 Sumber: [9859673](https://support.google.com/googleplay/android-developer/answer/9859673), [9859152](https://support.google.com/googleplay/android-developer/answer/9859152)
