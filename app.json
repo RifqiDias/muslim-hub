@@ -33,6 +33,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "./plugins/remove-read-media-permissions.js",
       "expo-router",
       [
         "expo-audio",
@@ -59,15 +60,8 @@
       [
         "expo-media-library",
         {
-          "savePhotosPermission": "Muslim Hub meminta izin untuk menyimpan wallpaper islami ke galeri Anda."
-        }
-      ],
-      [
-        "expo-audio",
-        {
-          "enableBackgroundPlayback": true,
-          "recordAudioAndroid": false,
-          "microphonePermission": false
+          "savePhotosPermission": "Muslim Hub meminta izin untuk menyimpan wallpaper islami ke galeri Anda.",
+          "granularPermissions": []
         }
       ]
     ],
