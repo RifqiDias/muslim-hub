@@ -64,10 +64,10 @@ src = open(p).read()
 block = """signingConfigs {
         // MUSLIMHUB_RELEASE_SIGNING (password via ENV, lihat scripts/build-aab-fast.sh)
         release {
-            storeFile file(System.getenv("MUSLIMHUB_STORE_FILE"))
-            storePassword System.getenv("MUSLIMHUB_STORE_PASSWORD")
-            keyAlias System.getenv("MUSLIMHUB_KEY_ALIAS")
-            keyPassword System.getenv("MUSLIMHUB_KEY_PASSWORD")
+            storeFile file(System.getenv("MUSLIMHUB_STORE_FILE") ?: 'debug.keystore')
+            storePassword System.getenv("MUSLIMHUB_STORE_PASSWORD") ?: 'android'
+            keyAlias System.getenv("MUSLIMHUB_KEY_ALIAS") ?: 'androiddebugkey'
+            keyPassword System.getenv("MUSLIMHUB_KEY_PASSWORD") ?: 'android'
         }
         debug {"""
 src = src.replace("signingConfigs {\n        debug {", block, 1)
